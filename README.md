@@ -29,11 +29,12 @@ A fim de especificar o modelo do banco de dados, foram elaborados os seguintes r
 - **Financiadores** – que possuem os atributos: **identificador**, **descritivo** e **endereço** – podem financiar diferentes projetos de pesquisa. Para um **financiamento**, devem ser registrados: **identificador**, **valor** financiado e a **data** do financiamento.
 - Por fim, projetos de pesquisa podem culminar em **artigos** científicos. Para cada artigo, o sistema deve permitir o registro de um **identificador**, seu Identificador de Objeto Digital (**DOI**), bem como **título**, **resumo** e um ***link*** para acesso do artigo. Diferentes artigos podem se originar de um projeto, e portanto, também é necessário o registro da **data de publicação** do artigo.
 
-## MODELO CONCEITUAL
+## Modelo Conceitual
+![image](https://github.com/user-attachments/assets/d53dc86d-9d7a-453f-a82b-b754ed241dd9)
 
-## MODELO LÓGICO
+## Modelo Lógico
 
-## SCRIPT DDL
+## Script DDL
 ```sql
 CREATE TABLE Taxon (
 	ID_Tax integer PRIMARY KEY,
