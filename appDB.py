@@ -1,8 +1,6 @@
-# pip install mysql-connector-python
-# pip install openai
-# pip install pillow transformers torch scikit-learn
-# Se possível usar VENV
-# Mude os dados da conexão com o MySQL
+# pip install mysql-connector-python openai pillow transformers torch scikit-learn
+# Se possível usar VENV (virtualenv) para isolar as dependências do projeto
+# Mude os dados da conexão com o MySQL (para usar o banco de dados local)
 
 import re
 import ast
@@ -940,6 +938,7 @@ if __name__ == "__main__":
                 ░▒ [0x08] > Deletar Manual ▒░
                 ░▒ [0x09] > IA: SQL Texto  ▒░
                 ░▒ [0x0A] > IA: Imagens    ▒░
+                ░▒ [0xFF] > CRUD           ▒░
                 ░▒ [0x00] > Explodir UFSC  ▒░
                 ░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░
                 """
@@ -1010,6 +1009,10 @@ if __name__ == "__main__":
                         print(f"Arquivo '{caminho_imagem}' não encontrado.")
                     except OSError as e:
                         print(f"Erro ao processar a imagem: {e}")
+                        
+                case 255:
+                    print("\nIniciando CRUD completo...")
+                    crud(con)
 
                 case _:
                     print("Opção inválida. Tente novamente.")
