@@ -33,6 +33,7 @@ A fim de especificar o modelo do banco de dados, foram elaborados os seguintes r
 ![image](https://github.com/user-attachments/assets/d53dc86d-9d7a-453f-a82b-b754ed241dd9)
 
 ## Modelo Lógico
+![image](https://github.com/user-attachments/assets/2589484d-f013-41df-b152-979dd334f5f5)
 
 ## Script DDL
 ```sql
