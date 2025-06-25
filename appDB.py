@@ -22,7 +22,20 @@ import torch
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch16")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch16")
 
-openai.api_key = "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"
+
+def get_openai_key():
+    """
+    Obtém a chave de API da OpenAI do ambiente ou de um arquivo de configuração.
+    Retorna:
+        str: Chave de API da OpenAI.
+    """
+    api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"  # Altere para o caminho do seu arquivo de chave
+    with open(api_key_file, "r", encoding="utf-8") as f:
+        api_key_value = f.read()
+    return api_key_value
+
+
+openai.api_key = get_openai_key()
 
 
 def connect_mysql(host="localhost", user="root", password="", database=None, port=3306):
@@ -235,92 +248,6 @@ def get_schema_info(conexao):
     return schema
 
 
-def get_foreign_key_dependencies(conexao):
-    """
-    Obtém o grafo de dependências de chaves estrangeiras entre tabelas do banco de dados conectado.
-    Esta função consulta o banco de dados para identificar todas as relações de chave estrangeira
-    entre as tabelas do schema atual, construindo um grafo direcionado onde cada nó representa
-    uma tabela e as arestas indicam dependências de chave estrangeira. Também retorna um dicionário
-    detalhando as relações de cada tabela.
-    Parâmetros:
-        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
-    Retorna:
-        tuple:
-            - grafo (defaultdict): Grafo de dependências, onde as chaves são nomes de tabelas e os valores
-              são conjuntos de tabelas das quais dependem via chave estrangeira.
-            - relacoes (defaultdict): Dicionário onde as chaves são nomes de tabelas e os valores são listas
-              de dicionários detalhando as colunas de chave estrangeira e suas referências.
-    """
-    
-    # Obtém as dependências de chaves estrangeiras entre tabelas
-    cursor = conexao.cursor()
-    query = """
-        SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-        WHERE TABLE_SCHEMA = DATABASE()
-          AND REFERENCED_TABLE_NAME IS NOT NULL
-    """
-    cursor.execute(query)
-    deps = cursor.fetchall()
-    cursor.close()
-
-    # Cria o grafo de dependências e as relações
-    grafo = defaultdict(set)
-    todas_tabelas = set()
-    relacoes = defaultdict(list)
-
-    # Preenche o grafo e as relações
-    # Cada entrada é (tabela, coluna, ref_tabela, ref_coluna)
-    for tabela_fk, coluna, ref_tabela, ref_coluna in deps:
-        grafo[tabela_fk].add(ref_tabela)
-        todas_tabelas.update([tabela_fk, ref_tabela])
-        relacoes[tabela_fk].append({
-            'coluna': coluna,
-            'ref_tabela': ref_tabela,
-            'ref_coluna': ref_coluna
-        })
-
-    # Garante que todas as tabelas estão no grafo, mesmo sem dependências
-    for tabela_nome in todas_tabelas:
-        grafo.setdefault(tabela_nome, set())
-
-    return grafo, relacoes
-
-
-def topological_sort(grafo):
-    """
-    Realiza a ordenação topológica de um grafo direcionado.
-    Parâmetros:
-        grafo (dict): Um dicionário representando o grafo, onde as chaves são os nós e os valores são listas de nós adjacentes.
-    Retorna:
-        list: Uma lista de nós ordenados topologicamente. Caso o grafo contenha ciclos, os nós restantes (não visitados) são adicionados ao final da lista.
-    """
-    
-    # Realiza a ordenação topológica de um grafo
-    in_degree = {u: 0 for u in grafo}
-    for u in grafo:
-        for v in grafo[u]:
-            in_degree[v] += 1
-
-    # Inicializa a fila com todos os nós de grau de entrada 0
-    fila = deque([u for u in grafo if in_degree[u] == 0])
-    ordenado = []
-    visitados = set()
-
-    while fila:
-        u = fila.popleft()
-        visitados.add(u)
-        ordenado.append(u)
-        for v in grafo[u]:
-            in_degree[v] -= 1
-            if in_degree[v] == 0 and v not in visitados:
-                fila.append(v)
-
-    # Verifica se todos os nós foram visitados
-    restantes = [u for u in grafo if u not in visitados]
-    return ordenado + restantes
-
-
 def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     """
     Gera um prompt para criação de dados fictícios para uma tabela específica de um schema.
@@ -400,7 +327,7 @@ def insert_data(conexao, nome_tabela, campos, dados):
     cursor.close()
 
 
-def populate_all_tables_ordered(conexao, n_linhas=10):
+def populate_all_tables(conexao, n_linhas=10):
     """
     Popula todas as tabelas do banco de dados na ordem correta considerando dependências de chaves estrangeiras.
     Primeiro, obtém o schema das tabelas e as dependências de chaves estrangeiras. Em seguida, realiza uma ordenação topológica para determinar a ordem de inserção dos dados, garantindo que tabelas dependentes sejam populadas após suas referências. Para cada tabela, verifica se já possui registros e, caso contrário, gera dados fictícios (sem as colunas de chave estrangeira) e insere na tabela. Ignora tabelas já populadas e trata erros de formatação dos dados gerados.
@@ -411,24 +338,36 @@ def populate_all_tables_ordered(conexao, n_linhas=10):
     
     # Pega o schema e as dependências de chaves estrangeiras
     schema = get_schema_info(conexao)
-    grafo, relacoes = get_foreign_key_dependencies(conexao)
-    ordem = topological_sort(grafo)
+    ordem = ["Taxon", "Hierarquia", "Especie", "Especime", 
+            "Local_de_Coleta", "Amostra", "Midia", "Projeto", 
+            "Artigo", "Funcionario", "Proj_Func", "Proj_Esp", 
+            "Categoria", "Esp_Cat", "Laboratorio", "Contrato", 
+            "Financiador", "Financiamento", "Equipamento", 
+            "Registro_de_Uso"]
+    
+    cursor = conexao.cursor()
+    cursor.execute("SHOW TABLES")
+    tabelas = [linha[0] for linha in cursor.fetchall()]
+    cursor.close()
+    valores = [tabelas.index(item) for item in ordem if item in tabelas]
 
-    # Popula as tabelas na ordem topológica sem as FKs
-    for tabela_nome in ordem:
+    # Popular com força
+    for tabela_nome in valores:
         print(f"\nTabela: `{tabela_nome}`")
         try:
             cursor = conexao.cursor()
             cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
             total = cursor.fetchone()[0]
             cursor.close()
+            
             if total > 0:
                 print(f"Tabela `{tabela_nome}` já contém {total} registros. Ignorando.")
                 continue
 
             campos = [col["nome"] for col in schema[tabela_nome]]
-            fks = {rel['coluna'] for rel in relacoes.get(tabela_nome, [])}
-            campos_sem_fk = [c for c in campos if c not in fks]
+
+            for dado in campos:
+                print(dado)
 
             prompt = build_prompt(
                 {t: schema[t] for t in [tabela_nome]},
@@ -445,64 +384,10 @@ def populate_all_tables_ordered(conexao, n_linhas=10):
                 print(f"Dados inválidos retornados pela IA para `{tabela_nome}` → {e}")
                 continue
 
-            dados_sem_fk = [tuple(v for i, v in enumerate(linha) if campos[i] in campos_sem_fk) for linha in dados]
-
-            insert_data(conexao, tabela_nome, campos_sem_fk, dados_sem_fk)
-            print(f"Populada `{tabela_nome}` parcialmente (sem FKs).")
+            insert_data(conexao, tabela_nome, campos, dados)
+            print(f"Populada `{tabela_nome}` parcialmente.")
         except ValueError as e:
             print(f"Erro ao processar `{tabela_nome}`: {e}")
-
-
-def update_foreign_keys(conexao):
-    """
-    Atualiza os valores das chaves estrangeiras em tabelas de um banco de dados após inserções parciais.
-    Esta função percorre todas as tabelas e suas relações de chave estrangeira, obtidas pela função 
-    `get_foreign_key_dependencies`, e preenche os campos de chave estrangeira que estão nulos com valores 
-    válidos da tabela referenciada. O processo é feito apenas para registros que ainda não possuem valor 
-    definido na coluna de chave estrangeira.
-    Parâmetros:
-        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados.
-    Efeitos colaterais:
-        - Atualiza registros nas tabelas do banco de dados, preenchendo chaves estrangeiras nulas.
-        - Realiza commit das alterações ao final do processo.
-        - Exibe mensagem no console ao término da atualização.
-    Observações:
-        - Assume que a função `get_foreign_key_dependencies` retorna corretamente as relações de chaves estrangeiras.
-        - O preenchimento é feito apenas para o número de registros existentes nas tabelas referenciadas.
-        - Utiliza SQL dinâmico; recomenda-se cuidado para evitar SQL Injection.
-    """
-    
-    # Atualiza as chaves estrangeiras após inserção parcial
-    _, relacoes = get_foreign_key_dependencies(conexao)
-
-    cursor = conexao.cursor()
-    
-    # Para cada tabela, atualiza as chaves estrangeiras
-    for tabela_nome in relacoes:
-        for rel in relacoes[tabela_nome]:
-            col = rel['coluna']
-            ref_tabela = rel['ref_tabela']
-            ref_coluna = rel['ref_coluna']
-
-            cursor.execute(f"SELECT `{ref_coluna}` FROM `{ref_tabela}`")
-            valores = [linha[0] for linha in cursor.fetchall()]
-            if not valores:
-                continue
-
-            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
-            total = cursor.fetchone()[0]
-            if total == 0:
-                continue
-
-            cursor.execute(f"SELECT `id` FROM (SELECT `{col}`, ROW_NUMBER() OVER () as id FROM `{tabela_nome}`) as temp")
-            ids = [i + 1 for i in range(len(valores))]
-
-            for i, val in enumerate(valores[:len(ids)]):
-                cursor.execute(f"UPDATE `{tabela_nome}` SET `{col}` = %s WHERE `{col}` IS NULL LIMIT 1", (val,))
-
-    conexao.commit()
-    cursor.close()
-    print("Chaves estrangeiras atualizadas após inserção parcial.")
 
 
 def update_random_rows(conexao, tabela_nome, n_linhas=5, modelo="gpt-4o-mini", temperatura=0.4):
@@ -922,8 +807,7 @@ def crud(connect):
 
     # 3. Popular todas as tabelas automaticamente com dados gerados por IA
     print("\n[CRUD] Populando tabelas automaticamente...")
-    populate_all_tables_ordered(connect, n_linhas=10)
-    update_foreign_keys(connect)
+    populate_all_tables(connect, n_linhas=10)
 
     # 4. Mostrar dados de todas as tabelas
     print("\n[CRUD] Exibindo dados de todas as tabelas:")
@@ -970,7 +854,7 @@ if __name__ == "__main__":
             print(
                 """
                 ░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░
-                ░▒   NEXUS-BIO CMD v1.3.2  ▒░
+                ░▒   NEXUS-BIO CMD v1.3.4  ▒░
                 ░▒------------------------ ▒░
                 ░▒ [0x01] > Criar Tabelas  ▒░
                 ░▒ [0x02] > Apagar Tabelas ▒░
@@ -987,7 +871,6 @@ if __name__ == "__main__":
                 ░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░
                 """
             )
-
 
             try:
                 opcao = int(input("Opção: "))
@@ -1012,8 +895,7 @@ if __name__ == "__main__":
                 case 3:
                     n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 10
-                    populate_all_tables_ordered(con, n_linhas=n)
-                    update_foreign_keys(con)
+                    populate_all_tables(con, n_linhas=n)
 
                 case 4:
                     show_table(con)
