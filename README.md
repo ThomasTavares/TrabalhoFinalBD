@@ -14,7 +14,7 @@ Além disso, também foram criadas tabelas referentes à artigos científicos pr
 A fim de especificar o modelo do banco de dados, foram elaborados os seguintes requisitos para o projeto:
 
 - O sistema deve ser capaz de armazenar a estrutura taxonômica de diferentes espécies de seres vivos. A taxonomia de uma espécie é dividida em **táxons** (unidade taxonômica nomeada) da seguinte forma (do mais geral ao mais específico): Domínio, Reino, Filo, Classe, Ordem, Família, Gênero e Espécie. Cada táxon possui um **identificador**, um **tipo** (dentre a hierarquia) e um **nome**, além de estar relacionado com apenas um táxon do nível hierárquico superior. Por fim, cada táxon pode estar relacionado com diferentes táxons do nível hierárquico inferior.
-- Para a **espécie**, o nível taxonômico mais baixo, devem ser armazenadas informações como **identificador**, **nome**, **descrição** e **IUCN** (nível de conservação). O nível IUCN varia de pouco preocupante (LC) até extinto (EX). A espécie segue a mesma regra de hierarquia dos táxons.
+- Para a **espécie**, o nível taxonômico mais baixo, devem ser armazenadas informações como **identificador**, **nome**, **nome popular**, **descrição** e **IUCN** (nível de conservação). O nível IUCN varia de pouco preocupante (LC) até extinto (EX). A espécie segue a mesma regra de hierarquia dos táxons.
 - Para cada espécie, é necessário o registro de diferentes **espécimes**. Cada espécime deve possuir um **identificador** e um **descritivo**. Um espécime deve estar relacionado com apenas uma espécie e uma espécie pode possuir diferentes espécimes.
 - Um espécime armazenado no banco de dados pode possuir um ou mais arquivos de **mídia**, como imagens e áudios. É necessário armazenar o **identificador** do arquivo de mídia, bem como seu **tipo** e uma **descrição**.
 - Além de espécimes, o sistema deve permitir o registro de **amostras** de espécies. Uma amostra possui um **identificador** e um **tipo** (sangue, pele, fóssil, etc).
@@ -30,10 +30,10 @@ A fim de especificar o modelo do banco de dados, foram elaborados os seguintes r
 - Por fim, projetos de pesquisa podem culminar em **artigos** científicos. Para cada artigo, o sistema deve permitir o registro de um **identificador**, seu Identificador de Objeto Digital (**DOI**), bem como **título**, **resumo** e um ***link*** para acesso do artigo. Diferentes artigos podem se originar de um projeto, e portanto, também é necessário o registro da **data de publicação** do artigo.
 
 ## Modelo Conceitual
-![image](https://github.com/user-attachments/assets/d53dc86d-9d7a-453f-a82b-b754ed241dd9)
+![image](https://github.com/user-attachments/assets/7f7c723e-fb83-4a62-a4ff-7e66a6db14a7)
 
 ## Modelo Lógico
-![image](https://github.com/user-attachments/assets/2589484d-f013-41df-b152-979dd334f5f5)
+![image](https://github.com/user-attachments/assets/b09dea7a-594c-46e8-94dd-0f0446f3d046)
 
 ## Script DDL
 ```sql
@@ -53,6 +53,7 @@ CREATE TABLE Especie (
 	ID_Esp integer PRIMARY KEY,
 	ID_Gen integer,
 	Nome varchar(50),
+	Nome_Pop varchar(50),
 	Descricao varchar(2500),
 	IUCN varchar(2),
 	FOREIGN KEY(ID_Gen) REFERENCES Taxon (ID_Tax));
