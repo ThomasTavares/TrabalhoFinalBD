@@ -630,7 +630,51 @@ def update_by_user(conexao):
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     """
+    print("\n--- TABELAS DISPONÍVEIS ---")
+    cursor = conexao.cursor()
+
+    # Mostra todas as tabelas
+    cursor.execute("SHOW TABLES;")
+    resultado = cursor.fetchall()
+
+    if not resultado:
+        print("Nenhuma tabela encontrada.")
+        return
+
+    tabelas = {t[0].lower(): t[0] for t in resultado}
+    
+    # Obtém o schema de todas as tabelas no banco de dados
+    schema = {}
+    cursor.execute("SHOW TABLES")
+    tabelas = [linha[0] for linha in cursor.fetchall()]
+
+    # Para cada tabela, obtém as colunas e seus tipos
+    for tabela_nome in tabelas:
+        cursor.execute(f"DESCRIBE `{tabela_nome}`")
+        colunas = cursor.fetchall()
+        schema[tabela_nome] = [{"nome": col[0], "tipo": col[1]} for col in colunas]
+        
+    for tabela_nome, colunas in schema.items():
+        print(f"\nTabela: {tabela_nome}")
+        print("Colunas:")
+        for coluna in colunas:
+            print(f"  - {coluna['nome']} ({coluna['tipo']})")
+    
     tabela_nome = input("Tabela: ").strip()
+    
+    if schema[tabela_nome] is None:
+        print(f"Tabela `{tabela_nome}` não encontrada.")
+        return
+    
+    cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
+    total = cursor.fetchone()[0]
+    if total == 0:
+        print(f"A tabela '{tabela_nome}' está vazia.")
+        cursor.close()
+        return
+    
+    cursor.close()
+
     campo = input("Campo a atualizar: ").strip()
     valor = input("Novo valor: ").strip()
     condicao = input("Condição WHERE (ex: id = 3): ").strip()
