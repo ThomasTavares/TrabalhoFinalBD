@@ -14,6 +14,7 @@ CREATE TABLE Especie (
 	ID_Esp integer PRIMARY KEY,
 	ID_Gen integer,
 	Nome varchar(50),
+	Nome_Pop varchar(50),
 	Descricao varchar(2500),
 	IUCN varchar(2),
 	FOREIGN KEY(ID_Gen) REFERENCES Taxon (ID_Tax));

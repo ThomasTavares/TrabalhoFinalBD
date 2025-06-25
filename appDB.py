@@ -337,7 +337,7 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
 
     
     prompt = f"""
-    Gere exatamente {n_linhas} linhas de dados realistas e coerentes para a tabela `{tabela_alvo}`, com base no seguinte schema:
+    Gere exatamente {n_linhas} linhas de dados realistas e coerentes para a tabela `{tabela_alvo}`, com base no seguinte esquema de banco de dados:
     
     {campos_str}
     
@@ -916,7 +916,7 @@ def crud(connect):
 if __name__ == "__main__":
     try:
         # Altere pro nosso banco de dados (usuario, senha, database)
-        con = connect_mysql(host="localhost", user="root", password="password", database="schema")
+        con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
 
         if not con:
             print("Não foi possível conectar ao banco de dados.")
