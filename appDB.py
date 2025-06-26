@@ -316,10 +316,10 @@ def insert_data(conexao, nome_tabela, campos, dados):
     cursor = conexao.cursor()
     placeholders = ", ".join(["%s"] * len(campos))
     campos_sql = ", ".join([f"`{c}`" for c in campos])
-    query = f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
+    insert_query = f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
     for linha in dados:
         try:
-            cursor.execute(query, linha)
+            cursor.execute(insert_query, linha)
         except mysql.connector.Error as err:
             print(f"Erro ao inserir na tabela `{nome_tabela}`: {err}")
 
@@ -349,7 +349,7 @@ def populate_all_tables(conexao, n_linhas=10):
     cursor.execute("SHOW TABLES")
     tabelas = [linha[0] for linha in cursor.fetchall()]
     cursor.close()
-    valores = [tabelas.index(item) for item in ordem if item in tabelas]
+    valores = [tabela for tabela in ordem if tabela in tabelas]
 
     # Popular com força
     for tabela_nome in valores:
@@ -365,9 +365,6 @@ def populate_all_tables(conexao, n_linhas=10):
                 continue
 
             campos = [col["nome"] for col in schema[tabela_nome]]
-
-            for dado in campos:
-                print(dado)
 
             prompt = build_prompt(
                 {t: schema[t] for t in [tabela_nome]},
@@ -385,9 +382,49 @@ def populate_all_tables(conexao, n_linhas=10):
                 continue
 
             insert_data(conexao, tabela_nome, campos, dados)
-            print(f"Populada `{tabela_nome}` parcialmente.")
+            print(f"Populada `{tabela_nome}` com sucesso.")
         except ValueError as e:
             print(f"Erro ao processar `{tabela_nome}`: {e}")
+
+
+def insert_by_user(conexao):
+    """
+    Solicita ao usuário o nome da tabela, os campos e valores a serem inseridos, e realiza a operação.
+    Parâmetros:
+        conexao: Objeto de conexão com o banco de dados MySQL.
+    """
+    cursor = conexao.cursor()
+
+    # Exibe tabelas disponíveis
+    cursor.execute("SHOW TABLES;")
+    tabelas = [t[0] for t in cursor.fetchall()]
+    if not tabelas:
+        print("Nenhuma tabela encontrada.")
+        return
+
+    print("\nTabelas disponíveis:", ", ".join(tabelas))
+    tabela_nome = input("Tabela: ").strip()
+    if tabela_nome not in tabelas:
+        print(f"Tabela `{tabela_nome}` não encontrada.")
+        return
+
+    # Exibe colunas da tabela
+    cursor.execute(f"DESCRIBE `{tabela_nome}`")
+    colunas = [col[0] for col in cursor.fetchall()]
+    print("\nColunas disponíveis:", ", ".join(colunas))
+
+    # Solicita campos e valores
+    campos = input("Campos (separados por vírgula): ").strip().split(",")
+    campos = [c.strip() for c in campos if c.strip() in colunas]
+    if not campos:
+        print("Nenhum campo válido informado.")
+        return
+
+    valores = [input(f"Valor para `{campo}`: ").strip() for campo in campos]
+
+    # Insere os dados
+    insert_data(conexao, tabela_nome, campos, [tuple(valores)])
+    print("Dados inseridos com sucesso.")
 
 
 def update_random_rows(conexao, tabela_nome, n_linhas=5, modelo="gpt-4o-mini", temperatura=0.4):
@@ -775,18 +812,18 @@ def search_similarity(conexao, imagem_consulta_bytes, top_k=3):
     cursor.close()
 
 
-def exit_db(connect):
+def exit_db(conexao):
     """
     Encerra a conexão com o banco de dados.
     Parâmetros:
-        connect (mysql.connector.connection.MySQLConnection): Objeto de conexão com o banco de dados.
+        conexao (mysql.connector.connection.MySQLConnection): Objeto de conexão com o banco de dados.
     Exceções:
         mysql.connector.Error: Caso ocorra um erro ao tentar encerrar a conexão.
     """
     
     try:
-        if connect.is_connected():
-            connect.close()
+        if conexao.is_connected():
+            conexao.close()
             print("Conexão com o banco de dados foi encerrada!")
         else:
             print("A conexão já estava encerrada.")
@@ -794,28 +831,32 @@ def exit_db(connect):
         print(f"Erro ao encerrar a conexão: {err}")
 
 
-def crud(connect):
+def crud(conexao):
     # Exemplo de CRUD completo usando as funções já implementadas
+    
+    # 1. Criar todas as tabelas
+    print("\n[CRUD] Criando todas as tabelas")
+    create_tables(conexao)
 
     # 1. Deletar todas as tabelas (limpa o banco)
     print("\n[CRUD] Deletando todas as tabelas...")
-    drop_tables(connect)
+    drop_tables(conexao)
 
     # 2. Criar todas as tabelas a partir do arquivo schema.sql
     print("\n[CRUD] Criando tabelas a partir de 'schema.sql'...")
-    create_tables("schema.sql", connect)
+    create_tables("schema.sql", conexao)
 
     # 3. Popular todas as tabelas automaticamente com dados gerados por IA
     print("\n[CRUD] Populando tabelas automaticamente...")
-    populate_all_tables(connect, n_linhas=10)
+    populate_all_tables(conexao, n_linhas=10)
 
     # 4. Mostrar dados de todas as tabelas
     print("\n[CRUD] Exibindo dados de todas as tabelas:")
-    schema = get_schema_info(connect)
-    for tabela in schema:
-        print(f"\n--- {tabela} ---")
-        cursor = connect.cursor()
-        cursor.execute(f"SELECT * FROM `{tabela}`")
+    schema = get_schema_info(conexao)
+    for tabela_nome in schema:
+        print(f"\n--- {tabela_nome} ---")
+        cursor = conexao.cursor()
+        cursor.execute(f"SELECT * FROM `{tabela_nome}`")
         linhas = cursor.fetchall()
         for linha in linhas:
             print(linha)
@@ -824,19 +865,19 @@ def crud(connect):
     # 5. Atualizar algumas linhas aleatórias de uma tabela (exemplo: primeira tabela)
     tabela_exemplo = next(iter(schema))
     print(f"\n[CRUD] Atualizando 3 linhas aleatórias da tabela '{tabela_exemplo}'...")
-    update_random_rows(connect, tabela_nome=tabela_exemplo, n_linhas=3)
+    update_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=3)
 
     # 6. Deletar algumas linhas aleatórias da mesma tabela
     print(f"\n[CRUD] Deletando 2 linhas aleatórias da tabela '{tabela_exemplo}'...")
-    delete_random_rows(connect, tabela_nome=tabela_exemplo, n_linhas=2)
+    delete_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=2)
 
     # 7. Atualização manual (exemplo)
     print(f"\n[CRUD] Atualização manual na tabela '{tabela_exemplo}' (exemplo)...")
-    # update_by_user(connect)  # Descomente para interação manual
+    # update_by_user(conexao) 
 
     # 8. Deleção manual (exemplo)
     print(f"\n[CRUD] Deleção manual na tabela '{tabela_exemplo}' (exemplo)...")
-    # delete_by_user(connect)  # Descomente para interação manual
+    # delete_by_user(conexao)  
 
     print("\n[CRUD] CRUD automatizado finalizado.")
 
@@ -853,29 +894,35 @@ if __name__ == "__main__":
         while True:
             print(
                 """
-                ░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░
-                ░▒   NEXUS-BIO CMD v1.3.4  ▒░
-                ░▒------------------------ ▒░
-                ░▒ [0x01] > Criar Tabelas  ▒░
-                ░▒ [0x02] > Apagar Tabelas ▒░
-                ░▒ [0x03] > IA: Preencher  ▒░
-                ░▒ [0x04] > Visualizar     ▒░
-                ░▒ [0x05] > IA: Atualizar  ▒░
-                ░▒ [0x06] > Remover Dados  ▒░
-                ░▒ [0x07] > Update Manual  ▒░
-                ░▒ [0x08] > Deletar Manual ▒░
-                ░▒ [0x09] > IA: SQL Texto  ▒░
-                ░▒ [0x0A] > IA: Imagens    ▒░
-                ░▒ [0xFF] > CRUD           ▒░
-                ░▒ [0x00] > Explodir UFSC  ▒░
-                ░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░
+                ╔════════════════════════════════════════════╗
+                ║           NEXUS-BIO CMD v1.4               ║
+                ║--------------------------------------------║
+                ║ [ 1 ] > Criar Tabelas                      ║
+                ║ [ 2 ] > Apagar Tabelas                     ║
+                ║ [ 3 ] > IA: Preencher Tabelas              ║
+                ║ [ 4 ] > Inserir Dados Manualmente          ║
+                ║ [ 5 ] > Visualizar Tabelas                 ║
+                ║ [ 6 ] > IA: Atualizar Dados Aleatórios     ║
+                ║ [ 7 ] > !IA: Remover Dados Aleatórios      ║
+                ║ [ 8 ] > Atualizar Dados Manualmente        ║
+                ║ [ 9 ] > Deletar Dados Manualmente          ║
+                ║ [10 ] > IA: Gerar SQL a partir de Texto    ║
+                ║ [11 ] > IA: Buscar Imagens Similares       ║
+                ║ [-1 ] > Executar CRUD Completo             ║
+                ║ [ 0 ] > Explodir UFSC                      ║
+                ╚════════════════════════════════════════════╝
                 """
             )
 
             try:
-                opcao = int(input("Opção: "))
+                opcao = int(input("Opção: ").strip())
+                if opcao < -1 or opcao > 11:
+                    print("Opção inválida. Escolha um número válido")
             except ValueError:
-                print("Digite um número válido.")
+                print("Entrada inválida. Por favor, digite um número.")
+                opcao = None
+
+            if opcao is None or opcao < -1 or opcao > 11:
                 continue
 
             match opcao:
@@ -891,41 +938,44 @@ if __name__ == "__main__":
 
                 case 2:
                     drop_tables(con)
-
+                    
                 case 3:
+                    update_by_user(con)
+
+                case 4:
                     n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 10
                     populate_all_tables(con, n_linhas=n)
 
-                case 4:
+                case 5:
                     show_table(con)
 
-                case 5:
+                case 6:
                     tabela = input("Tabela para atualizar: ").strip()
                     n = input("Quantas linhas aleatórias? [padrão=5]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 5
                     update_random_rows(con, tabela_nome=tabela, n_linhas=n)
 
-                case 6:
+                case 7:
                     tabela = input("Tabela para deletar linhas: ").strip()
                     n = input("Quantas linhas aleatórias? [padrão=5]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 5
                     delete_random_rows(con, tabela_nome=tabela, n_linhas=n)
 
-                case 7:
+                case 8:
                     update_by_user(con)
 
-                case 8:
+                case 9:
                     delete_by_user(con)
                 
-                case 9:
+                case 10:
                     prompt_usuario = input("Digite sua consulta SQL: ").strip()
                     db_schema = get_schema_info(con)
                     query = generate_sql_query(prompt_usuario, db_schema)
                     print(f"Query gerada: {query}")
                     make_query(con, query)
                 
-                case 10:
+                case 11:
                     caminho_imagem = input("Caminho da imagem para busca: ").strip()
                     try:
                         with open(caminho_imagem, "rb") as f:
@@ -936,7 +986,7 @@ if __name__ == "__main__":
                     except OSError as e:
                         print(f"Erro ao processar a imagem: {e}")
                         
-                case 255:
+                case -1:
                     print("\nIniciando CRUD completo...")
                     crud(con)
 
