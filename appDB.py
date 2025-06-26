@@ -383,8 +383,10 @@ def search_image_web(nome_especie, timeout=10):
         if response.status_code == 200:
             return response.content
             
+    except requests.RequestException as e:
+        print(f"Erro de requisição ao buscar imagem para '{nome_especie}': {e}")
     except Exception as e:
-        print(f"Erro ao buscar imagem para '{nome_especie}': {e}")
+        print(f"Erro inesperado ao buscar imagem para '{nome_especie}': {e}")
     
     return None
 
@@ -433,7 +435,7 @@ def create_placeholder_image(nome_especie, tamanho=(400, 300)):
         img.save(buffer, format='PNG')
         return buffer.getvalue()
         
-    except Exception as e:
+    except (OSError, IOError) as e:
         print(f"Erro ao criar placeholder para '{nome_especie}': {e}")
         return None
 
@@ -474,16 +476,16 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
             print(f"[{idx}/{len(especies)}] Processando: {nome_especie}")
             
             # Primeiro tenta buscar imagem real na web
-            imagem_bytes = search_image_web(nome_especie)
+            especie_imagem_bytes = search_image_web(nome_especie)
             
             # Se não conseguir, cria um placeholder personalizado
-            if not imagem_bytes:
+            if not especie_imagem_bytes:
                 print(f"  → Criando placeholder para '{nome_especie}'")
-                imagem_bytes = create_placeholder_image(nome_especie)
+                especie_imagem_bytes = create_placeholder_image(nome_especie)
             else:
                 print(f"  → Imagem encontrada na web para '{nome_especie}'")
             
-            if imagem_bytes:
+            if especie_imagem_bytes:
                 try:
                     # Busca um espécime desta espécie para associar à mídia
                     cursor.execute(
@@ -497,7 +499,7 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
                         # Insere na tabela Midia (ID_Midia é AUTO_INCREMENT)
                         cursor.execute(
                             "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)",
-                            (id_especime, f"Imagem - {nome_especie}", imagem_bytes)
+                            (id_especime, f"Imagem - {nome_especie}", especie_imagem_bytes)
                         )
                         
                         # Pega o ID da mídia inserida
@@ -647,6 +649,7 @@ def insert_by_user(conexao):
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     """
+    print("\n--- TABELAS DISPONÍVEIS ---")
     cursor = conexao.cursor()
 
     # Exibe tabelas disponíveis
@@ -654,31 +657,231 @@ def insert_by_user(conexao):
     tabelas = [t[0] for t in cursor.fetchall()]
     if not tabelas:
         print("Nenhuma tabela encontrada.")
+        cursor.close()
         return
 
-    print("\nTabelas disponíveis:", ", ".join(tabelas))
-    tabela_nome = input("Tabela: ").strip()
+    # Exibe lista de tabelas
+    for i, tabela_nome in enumerate(tabelas, 1):
+        print(f"[{i:2}] {tabela_nome}")
+
+    print("\n--- DETALHES DAS TABELAS ---")
+    
+    # Obtém e exibe o schema de cada tabela
+    for tabela_nome in tabelas:
+        cursor.execute(f"DESCRIBE `{tabela_nome}`")
+        colunas_info = cursor.fetchall()
+
+        print(f"\nTabela: {tabela_nome}")
+        print("   Colunas:")
+        for col_info in colunas_info:
+            nome_col = col_info[0]
+            tipo_col = col_info[1]
+            null_col = col_info[2]
+            key_col = col_info[3]
+            default_col = col_info[4]
+            
+            # Formata informações extras
+            extras = []
+            if key_col == 'PRI':
+                extras.append('PRIMARY KEY')
+            elif key_col == 'MUL':
+                extras.append('FOREIGN KEY')
+            if null_col == 'NO':
+                extras.append('NOT NULL')
+            if default_col:
+                extras.append(f'DEFAULT: {default_col}')
+
+            extras_str = f" ({', '.join(extras)})" if extras else ""
+            print(f"     • {nome_col}: {tipo_col}{extras_str}")
+
+    # Solicita nome da tabela
+    print("\n" + "="*50)
+    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip()
+    
     if tabela_nome not in tabelas:
         print(f"Tabela `{tabela_nome}` não encontrada.")
+        cursor.close()
         return
 
-    # Exibe colunas da tabela
+    # Exibe colunas da tabela selecionada
     cursor.execute(f"DESCRIBE `{tabela_nome}`")
-    colunas = [col[0] for col in cursor.fetchall()]
-    print("\nColunas disponíveis:", ", ".join(colunas))
+    colunas_detalhadas = cursor.fetchall()
+    colunas = [col[0] for col in colunas_detalhadas]
+    
+    print(f"\nTabela selecionada: {tabela_nome}")
+    print("   Colunas disponíveis:")
+    for i, col_info in enumerate(colunas_detalhadas, 1):
+        nome_col = col_info[0]
+        tipo_col = col_info[1]
+        null_col = col_info[2]
+        key_col = col_info[3]
+        default_col = col_info[4]
+        
+        # Indica se é obrigatório
+        obrigatorio = "OBRIGATÓRIO" if null_col == 'NO' and key_col != 'PRI' else ""
+        auto_increment = "AUTO_INCREMENT" if 'auto_increment' in str(col_info).lower() else ""
+        
+        status = []
+        if key_col == 'PRI':
+            status.append("PK")
+        if auto_increment:
+            status.append("AI")
+        if obrigatorio:
+            status.append("OBRIGATÓRIO")
+        
+        status_str = f" [{', '.join(status)}]" if status else ""
+        print(f"   [{i:2}] {nome_col}: {tipo_col}{status_str}")
 
-    # Solicita campos e valores
-    campos = input("Campos (separados por vírgula): ").strip().split(",")
-    campos = [c.strip() for c in campos if c.strip() in colunas]
-    if not campos:
-        print("Nenhum campo válido informado.")
-        return
+    # Oferece opções de inserção
+    print("\nEscolha o método de inserção:")
+    print("   [1] Inserção por campos específicos")
+    print("   [2] Inserção estilo tupla (todos os campos)")
+    
+    metodo = input("Método [1/2]: ").strip()
+    
+    if metodo == "2":
+        # INSERÇÃO ESTILO TUPLA
+        print(f"\nInserção estilo tupla para tabela: {tabela_nome}")
+        print(f"   Ordem dos campos: {', '.join(colunas)}")
+        print("Use 'NULL' para valores nulos, 'AUTO' para campos auto_increment")
+        
+        valores_input = input(f"\nDigite os valores separados por vírgula ({len(colunas)} valores): ").strip()
+        
+        if not valores_input:
+            print("Nenhum valor informado.")
+            cursor.close()
+            return
+        
+        # Processa os valores
+        valores_str = [v.strip() for v in valores_input.split(",")]
+        
+        if len(valores_str) != len(colunas):
+            print(f"Número incorreto de valores. Esperado: {len(colunas)}, Recebido: {len(valores_str)}")
+            cursor.close()
+            return
+        
+        valores = []
+        campos_inserir = []
+        valores_inserir = []
+        
+        for i, (campo, valor_str) in enumerate(zip(colunas, valores_str)):
+            col_info = colunas_detalhadas[i]
+            nome_col = col_info[0]
+            tipo_col = col_info[1]
+            key_col = col_info[3]
+            
+            # Verifica se é AUTO_INCREMENT
+            is_auto = 'auto_increment' in str(col_info).lower()
+            
+            if valor_str.upper() == 'AUTO' and is_auto:
+                # Pula campos AUTO_INCREMENT
+                continue
+            elif valor_str.upper() == 'NULL':
+                campos_inserir.append(nome_col)
+                valores_inserir.append(None)
+            elif 'int' in tipo_col.lower() and valor_str.isdigit():
+                campos_inserir.append(nome_col)
+                valores_inserir.append(int(valor_str))
+            elif 'decimal' in tipo_col.lower() or 'float' in tipo_col.lower():
+                try:
+                    campos_inserir.append(nome_col)
+                    valores_inserir.append(float(valor_str))
+                except ValueError:
+                    campos_inserir.append(nome_col)
+                    valores_inserir.append(valor_str)
+            else:
+                campos_inserir.append(nome_col)
+                valores_inserir.append(valor_str)
+        
+        # Confirma inserção
+        print("\nResumo da inserção estilo tupla:")
+        print(f"   Tabela: {tabela_nome}")
+        print("   Valores:")
+        for campo, valor in zip(campos_inserir, valores_inserir):
+            print(f"     {campo}: {valor}")
+        
+        confirmacao = input("\nConfirmar inserção? (s/N): ").strip().lower()
+        if confirmacao not in ['s', 'sim', 'y', 'yes']:
+            print("Inserção cancelada.")
+            cursor.close()
+            return
 
-    valores = [input(f"Valor para `{campo}`: ").strip() for campo in campos]
+        # Insere os dados
+        try:
+            insert_data(conexao, tabela_nome, campos_inserir, [tuple(valores_inserir)])
+            print("Dados inseridos com sucesso!")
+        except (mysql.connector.Error, ValueError) as e:
+            print(f"Erro ao inserir dados: {e}")
+        finally:
+            cursor.close()
+    
+    else:
+        # INSERÇÃO POR CAMPOS ESPECÍFICOS
+        print("\nPara campos AUTO_INCREMENT (chave primária), não é necessário informar valor.")
+        campos_input = input("\nCampos para inserir (separados por vírgula): ").strip()
+        
+        if not campos_input:
+            print("Nenhum campo informado.")
+            cursor.close()
+            return
+            
+        campos = [c.strip() for c in campos_input.split(",")]
+        campos_validos = [c for c in campos if c in colunas]
+        
+        if not campos_validos:
+            print("Nenhum campo válido informado.")
+            print(f"Campos disponíveis: {', '.join(colunas)}")
+            cursor.close()
+            return
 
-    # Insere os dados
-    insert_data(conexao, tabela_nome, campos, [tuple(valores)])
-    print("Dados inseridos com sucesso.")
+        if len(campos_validos) != len(campos):
+            campos_invalidos = [c for c in campos if c not in colunas]
+            print(f"Campos inválidos ignorados: {', '.join(campos_invalidos)}")
+
+        print(f"\nInserindo dados para os campos: {', '.join(campos_validos)}")
+
+        # Coleta valores para cada campo
+        valores = []
+        for campo in campos_validos:
+            # Busca informações do campo
+            campo_info = next((col for col in colunas_detalhadas if col[0] == campo), None)
+            tipo_campo = campo_info[1] if campo_info else "unknown"
+            
+            valor = input(f"   {campo} ({tipo_campo}): ").strip()
+            
+            # Tratamento básico de tipos
+            if valor.lower() == 'null':
+                valores.append(None)
+            elif 'int' in tipo_campo.lower() and valor.isdigit():
+                valores.append(int(valor))
+            elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
+                try:
+                    valores.append(float(valor))
+                except ValueError:
+                    valores.append(valor)
+            else:
+                valores.append(valor)
+
+        # Confirma inserção
+        print("\nResumo da inserção:")
+        print(f"   Tabela: {tabela_nome}")
+        for campo, valor in zip(campos_validos, valores):
+            print(f"   {campo}: {valor}")
+
+        confirmacao = input("\nConfirmar inserção? (s/N): ").strip().lower()
+        if confirmacao not in ['s', 'sim', 'y', 'yes']:
+            print("Inserção cancelada.")
+            cursor.close()
+            return
+
+        # Insere os dados
+        try:
+            insert_data(conexao, tabela_nome, campos_validos, [tuple(valores)])
+            print("Dados inseridos com sucesso!")
+        except (mysql.connector.Error, ValueError) as e:
+            print(f"Erro ao inserir dados: {e}")
+        finally:
+            cursor.close()
 
 
 def update_random_rows(conexao, tabela_nome, n_linhas=5, modelo="gpt-4o-mini", temperatura=0.4):
@@ -1023,6 +1226,10 @@ def search_similarity(conexao, imagem_consulta_bytes, top_k=3):
 
     # Gere embedding da imagem de consulta
     emb_consulta = generate_embeddings(imagem_consulta_bytes)
+    
+    if emb_consulta is None:
+        print("Erro ao gerar embedding da imagem de consulta.")
+        return
 
     # Gere embeddings das imagens do banco
     embeddings = []
@@ -1030,9 +1237,10 @@ def search_similarity(conexao, imagem_consulta_bytes, top_k=3):
     for id_midia, dado in midias:
         try:
             emb = generate_embeddings(dado)
-            embeddings.append(emb)
-            ids.append(id_midia)
-        except Exception as e:
+            if emb is not None:
+                embeddings.append(emb)
+                ids.append(id_midia)
+        except (OSError, IOError) as e:
             print(f"Erro ao processar imagem ID {id_midia}: {e}")
 
     if not embeddings:
@@ -1047,12 +1255,11 @@ def search_similarity(conexao, imagem_consulta_bytes, top_k=3):
     cursor = conexao.cursor()
     for i in top_idx:
         id_midia = ids[i]
-        # Busca nome e descrição da espécie associada à mídia
+        # Corrigida a consulta SQL baseada no schema real
         cursor.execute("""
             SELECT e.Nome, e.Descricao
             FROM Midia m
-            JOIN Esp_Midia em ON m.ID_Midia = em.ID_Midia
-            JOIN Especime es ON em.ID_Especime = es.ID_Especime
+            JOIN Especime es ON m.ID_Especime = es.ID_Especime
             JOIN Especie e ON es.ID_Esp = e.ID_Esp
             WHERE m.ID_Midia = %s
             LIMIT 1
