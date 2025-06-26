@@ -1,17 +1,21 @@
-# pip install mysql-connector-python openai pillow transformers torch scikit-learn
+# pip install mysql-connector-python openai pillow transformers torch scikit-learn requests
 # Se possível usar VENV (virtualenv) para isolar as dependências do projeto
 # Mude os dados da conexão com o MySQL (para usar o banco de dados local)
 
 import re
 import ast
 import io
+import time
+import random
 from collections import defaultdict, deque
+from urllib.parse import quote
 
 import openai
 import mysql.connector
 from mysql.connector import errorcode
+import requests
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 from sklearn.metrics.pairwise import cosine_similarity
@@ -282,6 +286,40 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     return prompt.strip()
 
 
+def build_prompt_for_media_table(schema: dict, tabela_alvo: str, n_linhas=20):
+    """
+    Gera um prompt específico para tabelas que contêm campos BLOB (como Midia).
+    Para campos BLOB, sugere usar None ou placeholder, pois a IA não pode gerar dados binários.
+    """
+    if tabela_alvo.lower() != 'midia':
+        return build_prompt(schema, tabela_alvo, n_linhas)
+    
+    campos_info = []
+    for col in schema[tabela_alvo]:
+        if 'blob' in col['tipo'].lower():
+            campos_info.append(f"- `{col['nome']}`: {col['tipo']} (use None - dados binários serão inseridos separadamente)")
+        else:
+            campos_info.append(f"- `{col['nome']}`: {col['tipo']}")
+    
+    campos_str = "\n".join(campos_info)
+    
+    prompt = f"""
+    Gere exatamente {n_linhas} linhas de dados realistas para a tabela `{tabela_alvo}`:
+    
+    {campos_str}
+    
+    IMPORTANTE: Para campos BLOB (Dado), use None pois não é possível gerar dados binários.
+    
+    Formato da resposta:
+    [
+        (valor1, valor2, None),
+        (valor1, valor2, None),
+        ...
+    ]
+    """
+    return prompt.strip()
+
+
 def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
     """     
         Gera dados a partir de um prompt utilizando um modelo da OpenAI.
@@ -327,6 +365,217 @@ def insert_data(conexao, nome_tabela, campos, dados):
     cursor.close()
 
 
+def search_image_web(nome_especie, timeout=10):
+    """
+    Busca uma imagem na web baseada no nome da espécie.
+    Parâmetros:
+        nome_especie (str): Nome da espécie para buscar imagem.
+        timeout (int): Timeout para a requisição HTTP.
+    Retorna:
+        bytes ou None: Bytes da imagem se encontrada, None caso contrário.
+    """
+    try:
+        # Usando Lorem Picsum com seed baseada no nome da espécie para consistência
+        seed = hash(nome_especie) % 1000
+        url = f"https://picsum.photos/400/300?random={seed}"
+        
+        response = requests.get(url, timeout=timeout)
+        if response.status_code == 200:
+            return response.content
+            
+    except Exception as e:
+        print(f"Erro ao buscar imagem para '{nome_especie}': {e}")
+    
+    return None
+
+
+def create_placeholder_image(nome_especie, tamanho=(400, 300)):
+    """
+    Cria uma imagem placeholder com o nome da espécie.
+    Parâmetros:
+        nome_especie (str): Nome da espécie.
+        tamanho (tuple): Dimensões da imagem (largura, altura).
+    Retorna:
+        bytes: Bytes da imagem PNG gerada.
+    """
+    try:
+        # Cria uma imagem com cor baseada no hash do nome
+        cor_base = hash(nome_especie) % 0xFFFFFF
+        cor_rgb = ((cor_base >> 16) & 255, (cor_base >> 8) & 255, cor_base & 255)
+        
+        # Torna a cor mais suave
+        cor_rgb = tuple(min(255, max(50, c + 100)) for c in cor_rgb)
+        
+        img = Image.new('RGB', tamanho, color=cor_rgb)
+        draw = ImageDraw.Draw(img)
+        
+        # Adiciona texto com o nome da espécie
+        try:
+            # Tenta usar uma fonte do sistema
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        except:
+            # Fallback para fonte padrão
+            font = ImageFont.load_default()
+        
+        # Calcula posição central do texto
+        bbox = draw.textbbox((0, 0), nome_especie, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        x = (tamanho[0] - text_width) // 2
+        y = (tamanho[1] - text_height) // 2
+        
+        # Desenha o texto
+        draw.text((x, y), nome_especie, fill='white', font=font)
+        
+        # Converte para bytes
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        return buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Erro ao criar placeholder para '{nome_especie}': {e}")
+        return None
+
+
+def populate_midia_table(conexao, delay_entre_requisicoes=2):
+    """
+    Popula a tabela Midia com imagens buscadas automaticamente na web
+    baseadas nos nomes das espécies cadastradas no banco.
+    
+    Parâmetros:
+        conexao: Conexão com o banco de dados.
+        delay_entre_requisicoes (int): Tempo de espera entre requisições web (em segundos).
+    """
+    cursor = conexao.cursor()
+    
+    try:
+        # Verifica se a tabela Midia já tem dados
+        cursor.execute("SELECT COUNT(*) FROM Midia")
+        count = cursor.fetchone()[0]
+        if count > 0:
+            print(f"Tabela Midia já contém {count} registros. Pulando...")
+            return
+        
+        # Busca todas as espécies cadastradas
+        cursor.execute("SELECT ID_Esp, Nome FROM Especie")
+        especies = cursor.fetchall()
+        
+        if not especies:
+            print("Nenhuma espécie encontrada. Popule a tabela Especie primeiro.")
+            return
+        
+        print(f"Encontradas {len(especies)} espécies. Buscando imagens...")
+        
+        sucessos = 0
+        falhas = 0
+        
+        for idx, (id_esp, nome_especie) in enumerate(especies, 1):
+            print(f"[{idx}/{len(especies)}] Processando: {nome_especie}")
+            
+            # Primeiro tenta buscar imagem real na web
+            imagem_bytes = search_image_web(nome_especie)
+            
+            # Se não conseguir, cria um placeholder personalizado
+            if not imagem_bytes:
+                print(f"  → Criando placeholder para '{nome_especie}'")
+                imagem_bytes = create_placeholder_image(nome_especie)
+            else:
+                print(f"  → Imagem encontrada na web para '{nome_especie}'")
+            
+            if imagem_bytes:
+                try:
+                    # Busca um espécime desta espécie para associar à mídia
+                    cursor.execute(
+                        "SELECT ID_Especime FROM Especime WHERE ID_Esp = %s LIMIT 1",
+                        (id_esp,)
+                    )
+                    especime = cursor.fetchone()
+                    
+                    if especime:
+                        id_especime = especime[0]
+                        # Insere na tabela Midia (ID_Midia é AUTO_INCREMENT)
+                        cursor.execute(
+                            "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)",
+                            (id_especime, f"Imagem - {nome_especie}", imagem_bytes)
+                        )
+                        
+                        # Pega o ID da mídia inserida
+                        id_midia = cursor.lastrowid
+                        
+                        sucessos += 1
+                        print(f"Sucesso! ID_Midia: {id_midia}")
+                    else:
+                        print(f"Nenhum espécime encontrado para '{nome_especie}'")
+                        falhas += 1
+                    
+                except mysql.connector.Error as e:
+                    print(f"Erro ao inserir mídia para '{nome_especie}': {e}")
+                    falhas += 1
+            else:
+                print(f"Não foi possível obter imagem para '{nome_especie}'")
+                falhas += 1
+            
+            # Delay para não sobrecarregar APIs
+            if idx < len(especies):  # Não faz delay na última iteração
+                time.sleep(delay_entre_requisicoes)
+        
+        conexao.commit()
+        print(f"\nProcessamento da tabela Midia concluído:")
+        print(f"   • Sucessos: {sucessos}")
+        print(f"   • Falhas: {falhas}")
+        print(f"   • Total processado: {len(especies)}")
+        
+    except Exception as e:
+        print(f"Erro geral ao popular tabela Midia: {e}")
+        conexao.rollback()
+    finally:
+        cursor.close()
+
+
+def populate_media_table_with_placeholder_images(conexao, n_linhas=10):
+    """
+    Popula a tabela Midia com imagens placeholder simples (versão antiga).
+    """
+    # Criar uma imagem placeholder simples
+    placeholder_image = Image.new('RGB', (100, 100), color='lightgray')
+    img_buffer = io.BytesIO()
+    placeholder_image.save(img_buffer, format='JPEG')
+    placeholder_bytes = img_buffer.getvalue()
+    
+    cursor = conexao.cursor()
+    
+    # Verificar se há especimes disponíveis
+    cursor.execute("SELECT ID_Especime FROM Especime")
+    especimes = [row[0] for row in cursor.fetchall()]
+    
+    if not especimes:
+        print("Nenhum espécime encontrado. Crie espécimes primeiro.")
+        cursor.close()
+        return
+    
+    # Gerar dados para Midia
+    tipos_midia = ['Fotografia', 'Microscopia', 'Radiografia', 'Ultrassom']
+    
+    dados_midia = []
+    for i in range(n_linhas):
+        id_especime = random.choice(especimes)
+        tipo = random.choice(tipos_midia)
+        dados_midia.append((id_especime, tipo, placeholder_bytes))
+    
+    # Inserir na tabela
+    insert_query = "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)"
+    for linha in dados_midia:
+        try:
+            cursor.execute(insert_query, linha)
+        except mysql.connector.Error as err:
+            print(f"Erro ao inserir mídia: {err}")
+    
+    conexao.commit()
+    cursor.close()
+    print(f"Tabela Midia populada com {n_linhas} registros e imagens placeholder.")
+    
+
 def populate_all_tables(conexao, n_linhas=10):
     """
     Popula todas as tabelas do banco de dados na ordem correta considerando dependências de chaves estrangeiras.
@@ -362,6 +611,11 @@ def populate_all_tables(conexao, n_linhas=10):
             
             if total > 0:
                 print(f"Tabela `{tabela_nome}` já contém {total} registros. Ignorando.")
+                continue
+
+            # Tratamento especial para tabela Midia (contém BLOB)
+            if tabela_nome.lower() == 'midia':
+                populate_midia_table(conexao)
                 continue
 
             campos = [col["nome"] for col in schema[tabela_nome]]
@@ -835,16 +1089,16 @@ def crud(conexao):
     # Exemplo de CRUD completo usando as funções já implementadas
     
     # 1. Criar todas as tabelas
-    print("\n[CRUD] Criando todas as tabelas")
-    create_tables(conexao)
+    print("\n[CRUD] Criando todas as tabelas a partir de 'script.sql'...")
+    create_tables("script.sql", conexao)
 
     # 1. Deletar todas as tabelas (limpa o banco)
     print("\n[CRUD] Deletando todas as tabelas...")
     drop_tables(conexao)
 
-    # 2. Criar todas as tabelas a partir do arquivo schema.sql
-    print("\n[CRUD] Criando tabelas a partir de 'schema.sql'...")
-    create_tables("schema.sql", conexao)
+    # 2. Criar todas as tabelas a partir do arquivo script.sql
+    print("\n[CRUD] Criando tabelas a partir de 'script.sql'...")
+    create_tables("script.sql", conexao)
 
     # 3. Popular todas as tabelas automaticamente com dados gerados por IA
     print("\n[CRUD] Populando tabelas automaticamente...")
@@ -940,12 +1194,12 @@ if __name__ == "__main__":
                     drop_tables(con)
                     
                 case 3:
-                    update_by_user(con)
-
-                case 4:
                     n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 10
                     populate_all_tables(con, n_linhas=n)
+
+                case 4:
+                    insert_by_user(con)
 
                 case 5:
                     show_table(con)
