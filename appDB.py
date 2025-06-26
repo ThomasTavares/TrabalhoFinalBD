@@ -1138,7 +1138,6 @@ def crud(conexao):
 
 if __name__ == "__main__":
     try:
-        # Altere pro nosso banco de dados (usuario, senha, database)
         con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
 
         if not con:
@@ -1148,23 +1147,23 @@ if __name__ == "__main__":
         while True:
             print(
                 """
-                ╔════════════════════════════════════════════╗
-                ║           NEXUS-BIO CMD v1.4               ║
-                ║--------------------------------------------║
-                ║ [ 1 ] > Criar Tabelas                      ║
-                ║ [ 2 ] > Apagar Tabelas                     ║
-                ║ [ 3 ] > IA: Preencher Tabelas              ║
-                ║ [ 4 ] > Inserir Dados Manualmente          ║
-                ║ [ 5 ] > Visualizar Tabelas                 ║
-                ║ [ 6 ] > IA: Atualizar Dados Aleatórios     ║
-                ║ [ 7 ] > !IA: Remover Dados Aleatórios      ║
-                ║ [ 8 ] > Atualizar Dados Manualmente        ║
-                ║ [ 9 ] > Deletar Dados Manualmente          ║
-                ║ [10 ] > IA: Gerar SQL a partir de Texto    ║
-                ║ [11 ] > IA: Buscar Imagens Similares       ║
-                ║ [-1 ] > Executar CRUD Completo             ║
-                ║ [ 0 ] > Explodir UFSC                      ║
-                ╚════════════════════════════════════════════╝
+                ╔═════════════════════════════════════════════╗
+                ║             NEXUS-BIO CMD v1.4              ║
+                ║---------------------------------------------║
+                ║ [  1 ] > Criar Tabelas                      ║
+                ║ [  2 ] > Apagar Tabelas                     ║
+                ║ [  3 ] > Visualizar Tabelas                 ║
+                ║ [  4 ] > Inserir Dados Manualmente          ║
+                ║ [  5 ] > Atualizar Dados Manualmente        ║
+                ║ [  6 ] > Deletar Dados Manualmente          ║
+                ║ [  7 ] > IA: Preencher Tabelas              ║
+                ║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
+                ║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
+                ║ [ 10 ] > IA: Buscar Imagens Similares       ║
+                ║ [ 11 ] > Executar CRUD Automático           ║
+                ║ [ 12 ] > Remover Dados Aleatórios           ║
+                ║ [  0 ] > Explodir Sistema                   ║
+                ╚═════════════════════════════════════════════╝
                 """
             )
 
@@ -1194,42 +1193,36 @@ if __name__ == "__main__":
                     drop_tables(con)
                     
                 case 3:
-                    n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
-                    n = int(n) if n.isdigit() and int(n) > 0 else 10
-                    populate_all_tables(con, n_linhas=n)
+                    show_table(con)
 
                 case 4:
                     insert_by_user(con)
 
                 case 5:
-                    show_table(con)
+                    update_by_user(con)
 
                 case 6:
+                    delete_by_user(con)
+
+                case 7:
+                    n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
+                    n = int(n) if n.isdigit() and int(n) > 0 else 10
+                    populate_all_tables(con, n_linhas=n)
+
+                case 8:
                     tabela = input("Tabela para atualizar: ").strip()
                     n = input("Quantas linhas aleatórias? [padrão=5]: ").strip()
                     n = int(n) if n.isdigit() and int(n) > 0 else 5
                     update_random_rows(con, tabela_nome=tabela, n_linhas=n)
 
-                case 7:
-                    tabela = input("Tabela para deletar linhas: ").strip()
-                    n = input("Quantas linhas aleatórias? [padrão=5]: ").strip()
-                    n = int(n) if n.isdigit() and int(n) > 0 else 5
-                    delete_random_rows(con, tabela_nome=tabela, n_linhas=n)
-
-                case 8:
-                    update_by_user(con)
-
                 case 9:
-                    delete_by_user(con)
-                
-                case 10:
                     prompt_usuario = input("Digite sua consulta SQL: ").strip()
                     db_schema = get_schema_info(con)
                     query = generate_sql_query(prompt_usuario, db_schema)
                     print(f"Query gerada: {query}")
                     make_query(con, query)
                 
-                case 11:
+                case 10:
                     caminho_imagem = input("Caminho da imagem para busca: ").strip()
                     try:
                         with open(caminho_imagem, "rb") as f:
@@ -1239,10 +1232,16 @@ if __name__ == "__main__":
                         print(f"Arquivo '{caminho_imagem}' não encontrado.")
                     except OSError as e:
                         print(f"Erro ao processar a imagem: {e}")
-                        
-                case -1:
-                    print("\nIniciando CRUD completo...")
+                
+                case 11:
+                    print("\nIniciando CRUD Automático...")
                     crud(con)
+                    
+                case 12:
+                    tabela = input("Tabela para deletar linhas: ").strip()
+                    n = input("Quantas linhas aleatórias? [padrão=5]: ").strip()
+                    n = int(n) if n.isdigit() and int(n) > 0 else 5
+                    delete_random_rows(con, tabela_nome=tabela, n_linhas=n)
 
                 case _:
                     print("Opção inválida. Tente novamente.")
