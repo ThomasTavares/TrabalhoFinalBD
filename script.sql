@@ -101,8 +101,8 @@ CREATE TABLE Laboratorio (
 
 CREATE TABLE Contrato (
 	ID_Contrato integer PRIMARY KEY,
-	ID_Func integer,
-	ID_Lab integer,
+	ID_Func integer NOT NULL,
+	ID_Lab integer NOT NULL,
 	Status varchar(50) NOT NULL,
 	Dt_Inicio date NOT NULL,
 	Dt_Fim date,
@@ -117,8 +117,8 @@ CREATE TABLE Financiador (
 
 CREATE TABLE Financiamento (
 	ID_Financiamento integer PRIMARY KEY,
-	ID_Proj integer,
-	ID_Financiador integer,
+	ID_Proj integer NOT NULL,
+	ID_Financiador integer NOT NULL,
 	Valor decimal(10,2) NOT NULL,
 	Dt_Financ date NOT NULL,
 	FOREIGN KEY(ID_Proj) REFERENCES Projeto (ID_Proj),
@@ -126,7 +126,7 @@ CREATE TABLE Financiamento (
 
 CREATE TABLE Equipamento (
 	ID_Equip integer PRIMARY KEY,
-	ID_Lab integer,
+	ID_Lab integer NOT NULL,
 	Tipo varchar(50) NOT NULL,
 	Modelo varchar(50) NOT NULL,
 	FOREIGN KEY(ID_Lab) REFERENCES Laboratorio (ID_Lab));
