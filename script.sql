@@ -1,7 +1,7 @@
 CREATE TABLE Taxon (
 	ID_Tax integer PRIMARY KEY,
-	Tipo varchar(10),
-	Nome varchar(50),
+	Tipo varchar(10) NOT NULL,
+	Nome varchar(50) NOT NULL,
 	CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero')));
 
 CREATE TABLE Hierarquia (
@@ -12,8 +12,8 @@ CREATE TABLE Hierarquia (
 
 CREATE TABLE Especie (
 	ID_Esp integer PRIMARY KEY,
-	ID_Gen integer,
-	Nome varchar(50),
+	ID_Gen integer NOT NULL,
+	Nome varchar(50) NOT NULL,
 	Nome_Pop varchar(50),
 	Descricao varchar(2500),
 	IUCN varchar(2),
@@ -21,54 +21,54 @@ CREATE TABLE Especie (
 
 CREATE TABLE Especime (
 	ID_Especime integer PRIMARY KEY,
-	ID_Esp integer,
+	ID_Esp integer NOT NULL,
 	Descritivo varchar(50),
 	FOREIGN KEY(ID_Esp) REFERENCES Especie (ID_Esp));
 
 CREATE TABLE Local_de_Coleta (
 	ID_Local integer PRIMARY KEY,
-	Nome varchar(50),
-	Endereco varchar(100));
+	Nome varchar(50) NOT NULL,
+	Endereco varchar(100) NOT NULL);
 
 CREATE TABLE Amostra (
 	ID_Amos integer PRIMARY KEY,
-	ID_Esp integer,
-	ID_Local integer,
-	Tipo varchar(50),
-	Dt_Coleta date,
+	ID_Esp integer NOT NULL,
+	ID_Local integer NOT NULL,
+	Tipo varchar(50) NOT NULL,
+	Dt_Coleta date NOT NULL,
 	FOREIGN KEY(ID_Esp) REFERENCES Especie (ID_Esp),
 	FOREIGN KEY(ID_Local) REFERENCES Local_de_Coleta (ID_Local));
 
 CREATE TABLE Midia (
 	ID_Midia integer PRIMARY KEY,
-	ID_Especime integer,
-	Tipo varchar(50),
+	ID_Especime integer NOT NULL,
+	Tipo varchar(50) NOT NULL,
 	Dado blob,	-- BLOB = Binary Large Object
 	FOREIGN KEY(ID_Especime) REFERENCES Especime (ID_Especime));
 
 CREATE TABLE Projeto (
 	ID_Proj integer PRIMARY KEY,
-	Nome varchar(50),
-	Descricao varchar(100),
-	Status varchar(50),
-	Dt_Inicio date,
+	Nome varchar(50) NOT NULL,
+	Descricao varchar(100) NOT NULL,
+	Status varchar(50) NOT NULL,
+	Dt_Inicio date NOT NULL,
 	Dt_Fim date);
     
 CREATE TABLE Artigo (
 	ID_Artigo integer PRIMARY KEY,
-	ID_Proj integer,
-	Titulo varchar(50),
-	Resumo varchar(2500),
-	DOI varchar(50),
+	ID_Proj integer NOT NULL,
+	Titulo varchar(50) NOT NULL,
+	Resumo varchar(2500) NOT NULL,
+	DOI varchar(50) NOT NULL,
 	Link varchar(100),
-	Dt_Pub date,
+	Dt_Pub date NOT NULL,
 	FOREIGN KEY(ID_Proj) REFERENCES Projeto (ID_Proj));
 
 CREATE TABLE Funcionario (
 	ID_Func integer PRIMARY KEY,
-	Nome varchar(50),
-	CPF varchar(11),
-	Cargo varchar(50));
+	Nome varchar(50) NOT NULL,
+	CPF varchar(11) NOT NULL,
+	Cargo varchar(50) NOT NULL);
     
 CREATE TABLE Proj_Func (
 	ID_Proj integer,
@@ -86,7 +86,7 @@ CREATE TABLE Proj_Esp (
 
 CREATE TABLE Categoria (
 	ID_Categ integer PRIMARY KEY,
-	Descritivo varchar(50));
+	Descritivo varchar(50) NOT NULL);
 
 CREATE TABLE Proj_Cat (
 	ID_Proj integer,
@@ -96,45 +96,45 @@ CREATE TABLE Proj_Cat (
 
 CREATE TABLE Laboratorio (
 	ID_Lab integer PRIMARY KEY,
-	Nome varchar(50),
-	Endereco varchar(100));
+	Nome varchar(50) NOT NULL,
+	Endereco varchar(100) NOT NULL);
 
 CREATE TABLE Contrato (
 	ID_Contrato integer PRIMARY KEY,
 	ID_Func integer,
 	ID_Lab integer,
-	Status varchar(50),
-	Dt_Inicio date,
+	Status varchar(50) NOT NULL,
+	Dt_Inicio date NOT NULL,
 	Dt_Fim date,
-	Valor decimal(10,2),
+	Valor decimal(10,2) NOT NULL,
 	FOREIGN KEY(ID_Func) REFERENCES Funcionario (ID_Func),
 	FOREIGN KEY(ID_Lab) REFERENCES Laboratorio (ID_Lab));
 
 CREATE TABLE Financiador (
 	ID_Financiador integer PRIMARY KEY,
-	Descritivo varchar(50),
-	Endereco varchar(100));
+	Descritivo varchar(50) NOT NULL,
+	Endereco varchar(100) NOT NULL);
 
 CREATE TABLE Financiamento (
 	ID_Financiamento integer PRIMARY KEY,
 	ID_Proj integer,
 	ID_Financiador integer,
-	Valor decimal(10,2),
-	Dt_Financ date,
+	Valor decimal(10,2) NOT NULL,
+	Dt_Financ date NOT NULL,
 	FOREIGN KEY(ID_Proj) REFERENCES Projeto (ID_Proj),
 	FOREIGN KEY(ID_Financiador) REFERENCES Financiador (ID_Financiador));
 
 CREATE TABLE Equipamento (
 	ID_Equip integer PRIMARY KEY,
 	ID_Lab integer,
-	Tipo varchar(50),
-	Modelo varchar(50),
+	Tipo varchar(50) NOT NULL,
+	Modelo varchar(50) NOT NULL,
 	FOREIGN KEY(ID_Lab) REFERENCES Laboratorio (ID_Lab));
 
 CREATE TABLE Registro_de_Uso (
 	ID_Func integer,
 	ID_Equip integer,
-	Dt_Reg timestamp,
+	Dt_Reg timestamp NOT NULL,
 	PRIMARY KEY(ID_Func,ID_Equip),
 	FOREIGN KEY(ID_Func) REFERENCES Funcionario (ID_Func),
 	FOREIGN KEY(ID_Equip) REFERENCES Equipamento (ID_Equip));
