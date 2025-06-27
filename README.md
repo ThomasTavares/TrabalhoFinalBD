@@ -90,8 +90,9 @@ CREATE TABLE Projeto (
 	Nome varchar(50) NOT NULL,
 	Descricao varchar(100) NOT NULL,
 	Status varchar(50) NOT NULL,
-	Dt_Inicio date NOT NULL,
-	Dt_Fim date);
+	Dt_Inicio date,
+	Dt_Fim date,
+	CHECK (Status IN ('Planejado', 'Ativo', 'Suspenso', 'Cancelado', 'Concluído')));
     
 CREATE TABLE Artigo (
 	ID_Artigo integer PRIMARY KEY,
@@ -143,9 +144,10 @@ CREATE TABLE Contrato (
 	ID_Func integer NOT NULL,
 	ID_Lab integer NOT NULL,
 	Status varchar(50) NOT NULL,
-	Dt_Inicio date NOT NULL,
+	Dt_Inicio date,
 	Dt_Fim date,
 	Valor decimal(10,2) NOT NULL,
+	CHECK (Status IN ('Pendente', 'Ativo', 'Suspenso', 'Cancelado', 'Encerrado')),
 	FOREIGN KEY(ID_Func) REFERENCES Funcionario (ID_Func),
 	FOREIGN KEY(ID_Lab) REFERENCES Laboratorio (ID_Lab));
 

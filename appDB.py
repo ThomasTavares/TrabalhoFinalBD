@@ -8,6 +8,7 @@ import io
 import time
 import random
 from datetime import datetime
+from prettytable import PrettyTable
 from collections import defaultdict, deque
 from urllib.parse import quote
 
@@ -164,9 +165,9 @@ def drop_tables(conexao):
         for (nome_tabela,) in tabelas:
             try:
                 cursor.execute(f"DROP TABLE IF EXISTS `{nome_tabela}`;")
-                print(f"Tabela '{nome_tabela}' removida.")
+                print(f"Tabela '{nome_tabela.upper()}' removida.")
             except mysql.connector.Error as e:
-                print(f"Erro ao deletar tabela '{nome_tabela}': {e}")
+                print(f"Erro ao deletar tabela '{nome_tabela.upper()}': {e}")
 
         # Reativa as restrições
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
@@ -178,7 +179,69 @@ def drop_tables(conexao):
         print("Erro ao deletar tabelas:", e)
 
 
-def show_table(conexao):
+def print_tables(conexao, print_flag=True):
+    """
+    Exibe as tabelas disponíveis no banco de dados conectado.
+    Parâmetros:
+        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
+    Retorna:
+        dict: Um dicionário onde as chaves são os nomes das tabelas em minúsculo e os valores são os nomes reais das tabelas.
+    """
+    cursor = conexao.cursor()
+    cursor.execute("SHOW TABLES;")
+    resultado = cursor.fetchall()
+
+    if not resultado:
+        print("Nenhuma tabela encontrada.")
+        return {}
+
+    tabelas = {t[0].lower(): t[0] for t in resultado}
+
+    if print_flag:
+        for nome_real in tabelas.values():
+            print(f"• {nome_real.upper()}")
+
+    cursor.close()
+    
+    return tabelas
+
+
+def show_table(conexao, tabela):
+    """
+    Exibe os valores registrados em uma tabela específica do banco de dados.
+    Parâmetros:
+        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
+        tabela (str): Nome da tabela a ser exibida.
+    Retorna:
+        None
+    """
+    cursor = conexao.cursor()
+    
+    tabelas = print_tables(conexao, False)
+    
+    if tabela not in tabelas:
+        print(f"Tabela '{tabela.upper()}' não encontrada.")
+        cursor.close()
+        return
+
+    try:
+        cursor.execute(f"SELECT * FROM `{tabela}`")
+        linhas = cursor.fetchall()
+        tabela_formatada = PrettyTable()
+        tabela_formatada.field_names = [col[0] for col in cursor.description]
+        if linhas:
+            for linha in linhas:
+                tabela_formatada.add_row(linha)
+            print(tabela_formatada)
+        else:
+            print(f"A tabela '{tabela.upper()}' está vazia.")
+    except mysql.connector.Error as err:
+        print(f"Erro ao consultar: {err}")
+    finally:
+        cursor.close()
+
+
+def show_tables(conexao):
     """
     Exibe as tabelas disponíveis no banco de dados conectado e permite ao usuário consultar o conteúdo de uma tabela específica.
     Parâmetros:
@@ -186,45 +249,24 @@ def show_table(conexao):
     Retorna:
         None
     """
-    
-    print("\n--- TABELAS DISPONÍVEIS ---")
-    cursor = conexao.cursor()
+    print("\n" + "="*50)
+    print("\nTabelas Disponíveis:")
 
     # Mostra todas as tabelas
-    cursor.execute("SHOW TABLES;")
-    resultado = cursor.fetchall()
-
-    if not resultado:
-        print("Nenhuma tabela encontrada.")
-        return
-
-    tabelas = {t[0].lower(): t[0] for t in resultado}
-
-    for nome_real in tabelas.values():
-        print(f"• {nome_real}")
+    tabelas = print_tables(conexao)
 
     # Entrada do usuário
     entrada = input("\nDigite o nome da tabela que deseja consultar: ").strip().lower()
-
-    if entrada not in tabelas:
-        print(f"Tabela '{entrada}' não encontrada (case-insensitive).")
-        return
-
     nome_real = tabelas[entrada]
 
-    try:
-        cursor.execute(f"SELECT * FROM `{nome_real}`")
-        linhas = cursor.fetchall()
-        if linhas:
-            print(f"\nTABELA: {nome_real}")
-            for linha in linhas:
-                print(linha)
-        else:
-            print(f"A tabela '{nome_real}' está vazia.")
-    except mysql.connector.Error as err:
-        print(f"Erro ao consultar: {err}")
-    finally:
-        cursor.close()
+    if entrada not in tabelas:
+        print(f"Tabela '{entrada.upper()}' não encontrada.")
+        return
+
+    print(f"\nTabela: {nome_real.upper()}")
+    show_table(conexao, nome_real)
+    
+    print("\n" + "="*50)
 
 
 def get_schema_info(conexao):
@@ -361,6 +403,7 @@ def insert_data(conexao, nome_tabela, campos, dados):
             cursor.execute(insert_query, linha)
         except mysql.connector.Error as err:
             print(f"Erro ao inserir na tabela `{nome_tabela}`: {err}")
+            raise
 
     conexao.commit()
     cursor.close()
@@ -605,7 +648,7 @@ def populate_all_tables(conexao, n_linhas=10):
 
     # Popular com força
     for tabela_nome in valores:
-        print(f"\nTabela: `{tabela_nome}`")
+        print(f"\nTabela: `{tabela_nome.upper()}`")
         try:
             cursor = conexao.cursor()
             cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
@@ -613,7 +656,7 @@ def populate_all_tables(conexao, n_linhas=10):
             cursor.close()
             
             if total > 0:
-                print(f"Tabela `{tabela_nome}` já contém {total} registros. Ignorando.")
+                print(f"Tabela `{tabela_nome.upper()}` já contém {total} registros. Ignorando.")
                 continue
 
             # Tratamento especial para tabela Midia (contém BLOB)
@@ -635,18 +678,18 @@ def populate_all_tables(conexao, n_linhas=10):
                 if not isinstance(dados, list) or not all(isinstance(x, tuple) for x in dados):
                     raise ValueError("Formato inválido: esperado lista de tuplas")
             except ValueError as e:
-                print(f"Dados inválidos retornados pela IA para `{tabela_nome}` → {e}")
+                print(f"Dados inválidos retornados pela IA para `{tabela_nome.upper()}` → {e}")
                 continue
             
             try:
                 insert_data(conexao, tabela_nome, campos, dados)
             except mysql.connector.Error as e:
-                print(f"Erro ao inserir dados em `{tabela_nome}`: {e}")
+                print(f"Erro ao inserir dados em `{tabela_nome.upper()}`: {e}")
                 return
-            print(f"Populada `{tabela_nome}` com sucesso.")
+            print(f"Populada `{tabela_nome.upper()}` com sucesso.")
             
         except ValueError as e:
-            print(f"Erro ao processar `{tabela_nome}`: {e}")
+            print(f"Erro ao processar `{tabela_nome.upper()}`: {e}")
 
 
 def insert_by_user(conexao):
@@ -655,7 +698,8 @@ def insert_by_user(conexao):
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     """
-    print("\n--- TABELAS DISPONÍVEIS ---")
+    print("\n" + "="*50)
+    print("\nTabelas Disponíveis:")
     cursor = conexao.cursor()
 
     # Exibe tabelas disponíveis
@@ -671,14 +715,12 @@ def insert_by_user(conexao):
         cursor.execute(f"DESCRIBE `{tabela_nome}`")
         colunas_info = cursor.fetchall()
 
-        print(f"\nTabela: {tabela_nome}")
-        print("   Colunas:")
+        print(f"\nTabela: {tabela_nome.upper()}")
+        print("Colunas:")
         for col_info in colunas_info:
             nome_col = col_info[0]
             tipo_col = col_info[1]
-            null_col = col_info[2]
             key_col = col_info[3]
-            default_col = col_info[4]
             
             # Formata informações extras
             extras = []
@@ -686,20 +728,16 @@ def insert_by_user(conexao):
                 extras.append('PRIMARY KEY')
             elif key_col == 'MUL':
                 extras.append('FOREIGN KEY')
-            if null_col == 'NO':
-                extras.append('NOT NULL')
-            if default_col:
-                extras.append(f'DEFAULT: {default_col}')
 
             extras_str = f" ({', '.join(extras)})" if extras else ""
-            print(f"     • {nome_col}: {tipo_col}{extras_str}")
+            print(f"\t• {nome_col}: {tipo_col}{extras_str}")
 
     # Solicita nome da tabela
-    print("\n" + "="*50)
-    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip()
+    print("\n" + "="*50 + "\n")
+    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip().lower()
     
     if tabela_nome not in tabelas:
-        print(f"Tabela `{tabela_nome}` não encontrada.")
+        print(f"Tabela `{tabela_nome.upper()}` não encontrada.")
         cursor.close()
         return
 
@@ -708,14 +746,13 @@ def insert_by_user(conexao):
     colunas_detalhadas = cursor.fetchall()
     colunas = [col[0] for col in colunas_detalhadas]
     
-    print(f"\nTabela selecionada: {tabela_nome}")
-    print("   Colunas disponíveis:")
+    print(f"\nTabela selecionada: {tabela_nome.upper()}")
+    print("Colunas disponíveis:")
     for i, col_info in enumerate(colunas_detalhadas, 1):
         nome_col = col_info[0]
         tipo_col = col_info[1]
         null_col = col_info[2]
         key_col = col_info[3]
-        default_col = col_info[4]
         
         # Indica se é obrigatório
         obrigatorio = "OBRIGATÓRIO" if null_col == 'NO' and key_col != 'PRI' else ""
@@ -730,9 +767,14 @@ def insert_by_user(conexao):
             status.append("OBRIGATÓRIO")
         
         status_str = f" [{', '.join(status)}]" if status else ""
-        print(f"    {nome_col}: {tipo_col}{status_str}")
+        print(f"\t• {nome_col}: {tipo_col}{status_str}")
+    
+    # Exibe valores já registrados na tabela
+    print("\nValores registrados:")
+    show_table(conexao, tabela_nome)
 
     # Coleta valores para cada campo
+    print("\nPreencha os valores para cada campo (digite 'null' para deixar campo vazio):")
     valores = []
     for campo in colunas:
         # Busca informações do campo
@@ -740,36 +782,60 @@ def insert_by_user(conexao):
         tipo_campo = campo_info[1] if campo_info else "unknown"
         
         if 'timestamp' in tipo_campo.lower():
-            valor = datetime.now()
-        else:
-            valor = input(f"   {campo} ({tipo_campo}): ").strip()
-        
-        # Tratamento básico de tipos
-        if valor.lower() == 'null':
-            valores.append(None)
-        elif 'int' in tipo_campo.lower() and valor.isdigit():
-            valores.append(int(valor))
-        elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
-            try:
-                valores.append(float(valor))
-            except ValueError:
-                valores.append(valor)
-        elif 'date' in tipo_campo.lower():
-            # Verifica se a data está no formato YYYY-MM-DD
-            if re.match(r'^\d{4}-\d{2}-\d{2}$', valor):
-                valores.append(valor)
+            valor = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+        elif 'blob' in tipo_campo.lower():
+            valor = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
+            if valor.lower() == 'null' or valor == '':
+                valor = None
             else:
-                print(f"Formato de data inválido para {campo}. Usando valor original.")
-                valores.append(valor)
-            
+                try:
+                    with open(valor, 'rb') as f:
+                        valor = f.read()
+                except FileNotFoundError:
+                    print(f"Arquivo '{valor}' não encontrado. Usando valor None.")
+                    valor = None
         else:
-            valores.append(valor)
+            valor_input = input(f"• {campo} ({tipo_campo}): ").strip()
+        
+        if 'int' in tipo_campo.lower() and valor_input.isdigit():
+            valor = int(valor_input)
+        elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
+                try:
+                    valor = float(valor_input)
+                except ValueError:
+                    valor = valor_input
+        elif 'date' in tipo_campo.lower():
+                # Verifica se a data está no formato YYYY-MM-DD
+                if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
+                    valor = valor_input
+                elif valor_input.lower() == 'null' or valor_input == '':
+                    valor = None
+                else:
+                    print(f"Formato de data inválido para {campo}. Usando data atual.")
+                    valor = (datetime.now()).strftime('%Y-%m-%d')
+        elif 'varchar' in tipo_campo.lower():
+            # Extrai o tamanho máximo do varchar
+            match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
+            max_len = int(match.group(1)) if match else None
+            if len(valor_input) > max_len:
+                print(f"Valor para {campo} excede o tamanho máximo de {max_len} caracteres. Truncando.")
+                valor = valor_input[:max_len]
+            else:
+                valor = valor_input
+        else:
+            # Para outros tipos, aceita o valor como string
+            if valor_input.lower() == 'null' or valor_input == '':
+                valor = None
+            else:
+                valor = valor_input
+        valores.append(valor)
 
     # Confirma inserção
+    print("\n" + "="*50)
     print("\nResumo da inserção:")
-    print(f"   Tabela: {tabela_nome}")
+    print(f"Tabela: {tabela_nome.upper()}")
     for campo, valor in zip(colunas, valores):
-        print(f"   {campo}: {valor}")
+        print(f"\t• {campo}: {valor}")
 
     confirmacao = input("\nConfirmar inserção? (s/N): ").strip().lower()
     if confirmacao not in ['s', 'sim', 'y', 'yes']:
@@ -785,6 +851,7 @@ def insert_by_user(conexao):
         print(f"Erro ao inserir dados: {e}")
     finally:
         cursor.close()
+    print("\n" + "="*50)
 
 
 def update_random_rows(conexao, tabela_nome, n_linhas=5, modelo="gpt-4o-mini", temperatura=0.4):
@@ -912,54 +979,22 @@ def update_by_user(conexao):
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     """
-    print("\n--- TABELAS DISPONÍVEIS ---")
     cursor = conexao.cursor()
 
-    # Mostra todas as tabelas
-    cursor.execute("SHOW TABLES;")
-    resultado = cursor.fetchall()
-
-    if not resultado:
-        print("Nenhuma tabela encontrada.")
-        return
-
-    tabelas = {t[0].lower(): t[0] for t in resultado}
+    print("\n" + "="*50)
+    print("\nTabelas Disponíveis:")
+    print_tables(conexao)
     
-    # Obtém o schema de todas as tabelas no banco de dados
-    schema = {}
-    cursor.execute("SHOW TABLES")
-    tabelas = [linha[0] for linha in cursor.fetchall()]
-
-    # Para cada tabela, obtém as colunas e seus tipos
-    for tabela_nome in tabelas:
-        cursor.execute(f"DESCRIBE `{tabela_nome}`")
-        colunas = cursor.fetchall()
-        schema[tabela_nome] = [{"nome": col[0], "tipo": col[1]} for col in colunas]
-        
-    for tabela_nome, colunas in schema.items():
-        print(f"\nTabela: {tabela_nome}")
-        print("Colunas:")
-        for coluna in colunas:
-            print(f"  - {coluna['nome']} ({coluna['tipo']})")
+    tabela_nome = input("\nSelecione a Tabela: ").strip()
     
-    tabela_nome = input("Tabela: ").strip()
-    
-    if schema[tabela_nome] is None:
-        print(f"Tabela `{tabela_nome}` não encontrada.")
-        return
-    
-    cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
-    total = cursor.fetchone()[0]
-    if total == 0:
-        print(f"A tabela '{tabela_nome}' está vazia.")
-        cursor.close()
-        return
+    print("\nValores registrados:")
+    show_table(conexao, tabela_nome)
     
     cursor.close()
 
-    campo = input("Campo a atualizar: ").strip()
+    campo = input("\nCampo a atualizar: ").strip()
     valor = input("Novo valor: ").strip()
-    condicao = input("Condição WHERE (ex: id = 3): ").strip()
+    condicao = input("Insira a condição WHERE (ex: id = 1): ").strip()
 
     query = f"UPDATE `{tabela_nome}` SET `{campo}` = %s WHERE {condicao}"
     try:
@@ -970,6 +1005,7 @@ def update_by_user(conexao):
         print("Atualização feita com sucesso.")
     except mysql.connector.Error as err:
         print(f"Erro: {err}")
+    print("\n" + "="*50)
 
 
 def delete_by_user(conexao):
@@ -978,9 +1014,15 @@ def delete_by_user(conexao):
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     """
+    print("\n" + "="*50)
+    print_tables(conexao)
     
-    tabela_nome = input("Tabela: ").strip()
-    condicao = input("Condição WHERE (ex: id = 1): ").strip()
+    tabela_nome = input("\nSelecione a Tabela: ").strip()
+    
+    print("\nValores registrados:")
+    show_table(conexao, tabela_nome)
+    
+    condicao = input("\nInsira a condição WHERE (ex: id = 1): ").strip()
 
     query = f"DELETE FROM `{tabela_nome}` WHERE {condicao}"
     try:
@@ -988,9 +1030,10 @@ def delete_by_user(conexao):
         cursor.execute(query)
         conexao.commit()
         cursor.close()
-        print("Linhas deletadas com sucesso.")
+        print("\nLinhas deletadas com sucesso.")
     except mysql.connector.Error as err:
         print(f"Erro: {err}")
+    print("\n" + "="*50)
 
 
 def generate_sql_query(user_prompt, schema, modelo="gpt-4o-mini", temperatura=0.3):
@@ -1218,7 +1261,7 @@ def crud(conexao):
     print("\n[CRUD] Exibindo dados de todas as tabelas:")
     schema = get_schema_info(conexao)
     for tabela_nome in schema:
-        print(f"\n--- {tabela_nome} ---")
+        print(f"\n--- {tabela_nome.upper()} ---")
         cursor = conexao.cursor()
         cursor.execute(f"SELECT * FROM `{tabela_nome}`")
         linhas = cursor.fetchall()
@@ -1255,27 +1298,25 @@ if __name__ == "__main__":
             exit(1)
 
         while True:
-            print(
-                """
-                ╔═════════════════════════════════════════════╗
-                ║             NEXUS-BIO CMD v1.4              ║
-                ║---------------------------------------------║
-                ║ [  1 ] > Criar Tabelas                      ║
-                ║ [  2 ] > Apagar Tabelas                     ║
-                ║ [  3 ] > Visualizar Tabelas                 ║
-                ║ [  4 ] > Inserir Dados Manualmente          ║
-                ║ [  5 ] > Atualizar Dados Manualmente        ║
-                ║ [  6 ] > Deletar Dados Manualmente          ║
-                ║ [  7 ] > IA: Preencher Tabelas              ║
-                ║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
-                ║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
-                ║ [ 10 ] > IA: Buscar Imagens Similares       ║
-                ║ [ 11 ] > Executar CRUD Automático           ║
-                ║ [ 12 ] > Remover Dados Aleatórios           ║
-                ║ [  0 ] > Explodir Sistema                   ║
-                ╚═════════════════════════════════════════════╝
-                """
-            )
+            print("""
+╔═════════════════════════════════════════════╗
+║             NEXUS-BIO CMD v1.4              ║
+║---------------------------------------------║
+║ [  1 ] > Criar Tabelas                      ║
+║ [  2 ] > Apagar Tabelas                     ║
+║ [  3 ] > Visualizar Tabelas                 ║
+║ [  4 ] > Inserir Dados Manualmente          ║
+║ [  5 ] > Atualizar Dados Manualmente        ║
+║ [  6 ] > Deletar Dados Manualmente          ║
+║ [  7 ] > IA: Preencher Tabelas              ║
+║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
+║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
+║ [ 10 ] > IA: Buscar Imagens Similares       ║
+║ [ 11 ] > Executar CRUD Automático           ║
+║ [ 12 ] > Remover Dados Aleatórios           ║
+║ [  0 ] > Explodir Sistema                   ║
+╚═════════════════════════════════════════════╝
+            """)
 
             try:
                 opcao = int(input("Opção: ").strip())
@@ -1302,7 +1343,7 @@ if __name__ == "__main__":
                     drop_tables(con)
                     
                 case 3:
-                    show_table(con)
+                    show_tables(con)
 
                 case 4:
                     insert_by_user(con)
