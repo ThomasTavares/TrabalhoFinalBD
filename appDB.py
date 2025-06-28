@@ -654,12 +654,11 @@ def create_placeholder_image(nome_especie, tamanho=(400, 300)):
 
 def populate_midia_table(conexao, delay_entre_requisicoes=2):
     """
-    Popula a tabela Midia com imagens buscadas automaticamente na web
+    Popula a tabela Midia com imagens REAIS buscadas na web
     baseadas nos nomes das espécies cadastradas no banco.
     
-    Parâmetros:
-        conexao: Conexão com o banco de dados.
-        delay_entre_requisicoes (int): Tempo de espera entre requisições web (em segundos).
+    Esta função evita inserir dados aleatórios no campo BLOB,
+    buscando imagens reais ou criando placeholders específicos.
     """
     cursor = conexao.cursor()
     
@@ -677,9 +676,10 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
         
         if not especies:
             print("Nenhuma espécie encontrada. Popule a tabela Especie primeiro.")
+            print("   Use a opção 7 para popular as tabelas na ordem correta.")
             return
         
-        print(f"Encontradas {len(especies)} espécies. Buscando imagens...")
+        print(f"✓ Encontradas {len(especies)} espécies. Buscando imagens REAIS...")
         
         sucessos = 0
         falhas = 0
@@ -690,12 +690,12 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
             # Primeiro tenta buscar imagem real na web
             especie_imagem_bytes = search_image_web(nome_especie)
             
-            # Se não conseguir, cria um placeholder personalizado
+            # Se não conseguir, cria um placeholder ESPECÍFICO (não aleatório)
             if not especie_imagem_bytes:
-                print(f"  → Criando placeholder para '{nome_especie}'")
+                print(f"  → Criando placeholder específico para '{nome_especie}'")
                 especie_imagem_bytes = create_placeholder_image(nome_especie)
             else:
-                print(f"  → Imagem encontrada na web para '{nome_especie}'")
+                print(f"  → ✓ Imagem real encontrada na web para '{nome_especie}'")
             
             if especie_imagem_bytes:
                 try:
@@ -718,16 +718,16 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
                         id_midia = cursor.lastrowid
                         
                         sucessos += 1
-                        print(f"Sucesso! ID_Midia: {id_midia}")
+                        print(f"  → ✓ Sucesso! ID_Midia: {id_midia}")
                     else:
-                        print(f"Nenhum espécime encontrado para '{nome_especie}'")
+                        print(f"  → Nenhum espécime encontrado para '{nome_especie}'")
                         falhas += 1
                     
                 except mysql.connector.Error as e:
-                    print(f"Erro ao inserir mídia para '{nome_especie}': {e}")
+                    print(f"  → Erro ao inserir mídia para '{nome_especie}': {e}")
                     falhas += 1
             else:
-                print(f"Não foi possível obter imagem para '{nome_especie}'")
+                print(f"  → Não foi possível obter imagem para '{nome_especie}'")
                 falhas += 1
             
             # Delay para não sobrecarregar APIs
@@ -735,14 +735,19 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
                 time.sleep(delay_entre_requisicoes)
         
         conexao.commit()
-        print(f"\nProcessamento da tabela Midia concluído:")
-        print(f"   • Sucessos: {sucessos}")
+        print(f"\n{'='*60}")
+        print("PROCESSAMENTO DA TABELA MIDIA CONCLUÍDO:")
+        print(f"   • ✓ Sucessos: {sucessos}")
         print(f"   • Falhas: {falhas}")
         print(f"   • Total processado: {len(especies)}")
+        print(f"   • Taxa de sucesso: {(sucessos/len(especies)*100):.1f}%")
+        print(f"{'='*60}")
         
-    except Exception as e:
-        print(f"Erro geral ao popular tabela Midia: {e}")
+    except mysql.connector.Error as e:
+        print(f"Erro de banco de dados ao popular tabela Midia: {e}")
         conexao.rollback()
+    except OSError as e:
+        print(f"Erro de sistema ao popular tabela Midia: {e}")
     finally:
         cursor.close()
 
@@ -1100,59 +1105,97 @@ def delete_by_user(conexao):
 
 def generate_sql_query(user_prompt, schema, modelo="gpt-4o-mini", temperatura=0.3):
     """
-    Gera uma query SQL baseada em um pedido do usuário e em um schema de banco de dados fornecido.
-    Esta função identifica tabelas relevantes mencionadas no texto do usuário, monta um schema reduzido
-    contendo apenas essas tabelas (ou todas, caso nenhuma seja identificada), e constrói um prompt para
-    um modelo de linguagem gerar a query SQL correspondente ao pedido.
-    Parâmetros:
-        user_prompt (str): Pedido do usuário em linguagem natural descrevendo a consulta desejada.
-        schema (dict): Dicionário representando o schema do banco de dados, onde as chaves são nomes de tabelas
-            e os valores são listas de dicionários com informações das colunas (devem conter a chave 'nome').
-        modelo (str, opcional): Nome do modelo de linguagem a ser utilizado para gerar a query. Padrão: "gpt-4o-mini".
-        temperatura (float, opcional): Parâmetro de temperatura para o modelo de linguagem, controlando a aleatoriedade
-            da resposta. Padrão: 0.3.
-    Retorno:
-        str: Query SQL gerada pelo modelo de linguagem, sem explicações adicionais.
+    Gera uma query SQL baseada em um pedido do usuário.
     """
-    
-    # Tenta identificar tabelas mencionadas no texto do usuário
+    # Identifica tabelas mencionadas
     texto = user_prompt.lower()
     tabelas_relevantes = []
+    
+    # Palavras-chave que podem indicar tabelas mesmo sem mencionar o nome exato
+    palavras_chave_tabela = {
+        'especie': ['Especie', 'Especime'],
+        'taxonomia': ['Taxon', 'Hierarquia', 'Especie'],
+        'projeto': ['Projeto', 'Artigo', 'Proj_Func', 'Proj_Esp', 'Proj_Cat'],
+        'funcionario': ['Funcionario', 'Contrato', 'Proj_Func'],
+        'laboratorio': ['Laboratorio', 'Equipamento', 'Contrato'],
+        'midia': ['Midia'],
+        'amostra': ['Amostra', 'Local_de_Coleta'],
+        'financiamento': ['Financiamento', 'Financiador']
+    }
+    
+    # Busca por palavras-chave
+    for palavra, tabelas in palavras_chave_tabela.items():
+        if palavra in texto:
+            tabelas_relevantes.extend(tabelas)
+    
+    # Busca por nomes exatos de tabelas
     for tabela_nome in schema:
         if tabela_nome.lower() in texto:
             tabelas_relevantes.append(tabela_nome)
-            
-    # Se não encontrar nenhuma, usa todas (fallback)
-    if not tabelas_relevantes:
-        tabelas_relevantes = list(schema.keys())
-    schema_reduzido = {t: schema[t] for t in tabelas_relevantes if t in schema}
-
-    # Monta o schema enxuto para o prompt
+    
+    # Remove duplicatas e usa todas as tabelas se não encontrar nada
+    tabelas_relevantes = list(set(tabelas_relevantes)) if tabelas_relevantes else list(schema.keys())
+    
+    # Inclui tabelas relacionadas (foreign keys)
+    tabelas_com_relacionamentos = set(tabelas_relevantes)
+    for tabela in tabelas_relevantes:
+        if tabela in schema:
+            # Adiciona lógica para incluir tabelas relacionadas baseado no schema
+            # Por exemplo, se mencionar 'Especime', incluir 'Especie'
+            if tabela == 'Especime':
+                tabelas_com_relacionamentos.add('Especie')
+            elif tabela == 'Especie':
+                tabelas_com_relacionamentos.add('Taxon')
+    
+    schema_reduzido = {t: schema[t] for t in tabelas_com_relacionamentos if t in schema}
+    
+    # Monta informação de relacionamentos
+    relacionamentos_info = """
+    RELACIONAMENTOS PRINCIPAIS:
+    - Especie → Taxon (via ID_Gen)
+    - Especime → Especie (via ID_Esp)
+    - Midia → Especime (via ID_Especime)
+    - Amostra → Especie e Local_de_Coleta
+    - Projeto relaciona-se com Funcionario, Especie, Categoria
+    - Contrato → Funcionario e Laboratorio
+    """
+    
     campos_str = "\n".join(
         f"- {t}: {', '.join([col['nome'] for col in schema_reduzido[t]])}"
         for t in schema_reduzido
     )
 
     prompt = f"""
-        Você é um assistente SQL. Gere APENAS a query SQL correspondente ao pedido abaixo, usando o seguinte schema (tabelas e colunas):
-        
-        {campos_str}
-        
-        Pedido do usuário:
-        \"\"\"{user_prompt}\"\"\"
-        
-        IMPORTANTE:
-        - NÃO inclua explicações, comentários, texto extra, cabeçalhos ou rodapés.
-        - NÃO adicione nada além da query SQL.
-        - Retorne SOMENTE a query SQL, em uma única linha, pronta para ser executada.
-        
-        Exemplo de resposta correta:
-        SELECT * FROM tabela WHERE condicao;
-        
-        Se retornar qualquer coisa além da query SQL, será considerado erro.
+    Você é um assistente SQL especializado em bancos de dados de laboratórios de taxonomia.
+    
+    SCHEMA DISPONÍVEL:
+    {campos_str}
+    
+    {relacionamentos_info}
+    
+    PEDIDO DO USUÁRIO: "{user_prompt}"
+    
+    INSTRUÇÕES:
+    - Gere APENAS a query SQL, sem explicações
+    - Use JOIN quando necessário para relacionar tabelas
+    - Use nomes de colunas exatos do schema
+    - Para campos de data, use formato 'YYYY-MM-DD'
+    - Limite resultados com LIMIT quando apropriado
+    
+    QUERY SQL:
     """
+    
     resposta = generate_data(prompt, modelo=modelo, temperatura=temperatura)
-    return resposta.strip()
+    
+    if resposta:
+        # Remove possíveis explicações extras
+        linhas = resposta.strip().split('\n')
+        for linha in linhas:
+            linha_limpa = linha.strip()
+            if linha_limpa and not linha_limpa.startswith(('--', '/*', '#')):
+                return linha_limpa
+    
+    return resposta.strip() if resposta else None
 
 
 def make_query(conexao, sql_query):
