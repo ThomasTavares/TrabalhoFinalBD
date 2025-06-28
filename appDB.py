@@ -300,6 +300,26 @@ def get_schema_info(conexao):
     return schema
 
 
+def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
+    """     
+        Gera dados a partir de um prompt utilizando um modelo da OpenAI.
+        Parâmetros:
+            prompt (str): Texto de entrada que será enviado ao modelo para geração de dados.
+            modelo (str, opcional): Nome do modelo OpenAI a ser utilizado. Padrão é "gpt-4o-mini".
+            temperatura (float, opcional): Grau de aleatoriedade na geração do texto. Padrão é 0.4.
+        Retorna:
+            str: Texto gerado pelo modelo OpenAI em resposta ao prompt fornecido.
+    """
+
+    # Gera dados usando o modelo OpenAI
+    response = openai.chat.completions.create(
+        model=modelo,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=temperatura,
+    )
+    return response.choices[0].message.content
+
+
 def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     """
     Gera um prompt para criação de dados fictícios para uma tabela específica de um schema.
@@ -439,10 +459,6 @@ def build_prompt_for_media_table(schema: dict, tabela_alvo: str, n_linhas=20):
 def insert_data_from_json(conexao, nome_tabela, json_dados):
     """
     Insere dados em uma tabela a partir de um JSON estruturado.
-    Parâmetros:
-        conexao: Conexão com o banco de dados.
-        nome_tabela (str): Nome da tabela.
-        json_dados (dict): Dados em formato JSON com chave "registros".
     """
     if "registros" not in json_dados:
         raise ValueError("JSON deve conter a chave 'registros'")
@@ -459,7 +475,7 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     cursor = conexao.cursor()
     cursor.execute(f"DESCRIBE `{nome_tabela}`")
     colunas_detalhes = cursor.fetchall()
-    schema_colunas = {col[0]: col[1] for col in colunas_detalhes}  # Mapeia nome da coluna para tipo
+    schema_colunas = {col[0]: col[1] for col in colunas_detalhes}
 
     placeholders = ", ".join(["%s"] * len(campos))
     campos_sql = ", ".join([f"`{c}`" for c in campos])
@@ -470,24 +486,34 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     
     for registro in registros:
         try:
-            # Trunca os valores com base no tamanho máximo permitido no schema
+            # Processa e trunca os valores conforme necessário
             valores = []
             for campo in campos:
                 valor = registro[campo]
+                
+                # Trunca strings longas para campos varchar
                 if campo in schema_colunas and "varchar" in schema_colunas[campo].lower():
-                    # Extrai o tamanho máximo do varchar
                     max_len_match = re.search(r'varchar\((\d+)\)', schema_colunas[campo].lower())
                     if max_len_match:
                         max_len = int(max_len_match.group(1))
-                        valor = truncate_value(valor, max_len)
+                        if isinstance(valor, str) and len(valor) > max_len:
+                            valor = valor[:max_len]
+                            print(f"  → Truncado campo '{campo}' de {len(registro[campo])} para {max_len} caracteres")
+                
                 valores.append(valor)
             
             # Executa a inserção
             cursor.execute(insert_query, tuple(valores))
             sucessos += 1
+            
         except mysql.connector.Error as err:
-            print(f"Erro ao inserir registro {registro}: {err}")
             erros += 1
+            if err.errno == 1452:  # Foreign key constraint fails
+                print(f"  → Erro FK: Chave estrangeira inválida em {registro}")
+            elif err.errno == 1406:  # Data too long
+                print(f"  → Erro: Dados muito longos em {registro}")
+            else:
+                print(f"  → Erro DB {err.errno}: {err} em {registro}")
     
     conexao.commit()
     cursor.close()
@@ -495,100 +521,39 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     print(f"Tabela {nome_tabela}: {sucessos} inserções bem-sucedidas, {erros} erros")
 
 
-def populate_all_tables(conexao, n_linhas=10):
+def clean_json_response(response):
     """
-    Popula todas as tabelas usando o novo formato JSON.
+    Limpa a resposta da IA removendo blocos de código markdown e outros caracteres indesejados.
     """
-
-    schema = get_schema_info(conexao)
-    ordem = ["taxon", "hierarquia", "especie", "especime", 
-            "local_de_coleta", "amostra", "midia", "projeto", 
-            "artigo", "funcionario", "proj_func", "proj_esp", 
-            "categoria", "proj_cat", "laboratorio", "contrato", 
-            "financiador", "financiamento", "equipamento", 
-            "registro_de_uso"]
+    if not response:
+        return response
     
-    cursor = conexao.cursor()
-    cursor.execute("SHOW TABLES")
-    tabelas = [linha[0] for linha in cursor.fetchall()]
-    cursor.close()
+    # Remove blocos de código markdown
+    response = re.sub(r'```json\s*', '', response)
+    response = re.sub(r'```\s*', '', response)
     
-    # Filtra apenas tabelas que existem no banco
-    tabelas_ordenadas = [t for t in ordem if t in tabelas]
-
-    for tabela_nome in tabelas_ordenadas:
-        print(f"\nProcessando tabela: `{tabela_nome.upper()}`")
-        
-        try:
-            cursor = conexao.cursor()
-            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
-            total = cursor.fetchone()[0]
-            cursor.close()
-            
-            if total > 0:
-                print(f"Tabela `{tabela_nome.upper()}` já contém {total} registros. Pulando...")
-                continue
-            
-            # TRATAMENTO ESPECIAL PARA TABELA TAXON
-            if tabela_nome.lower() == 'taxon':
-                print("  → Tratamento especial para a tabela `Taxon`...")
-                populate_taxon_table(conexao)
-                continue
-
-            # TRATAMENTO ESPECIAL PARA TABELA MIDIA
-            if tabela_nome.lower() == 'midia':
-                print("  → Preenchendo tabela `Midia` com imagens reais...")
-                populate_midia_table(conexao)
-                continue
-
-            # GERAR DADOS VIA IA PARA OUTRAS TABELAS
-            # Escolhe o prompt adequado baseado na tabela
-            if tabela_nome.lower() == 'midia':
-                # Caso especial se não usar populate_midia_table
-                prompt = build_prompt_for_media_table(schema, tabela_nome, n_linhas)
-            else:
-                prompt = build_prompt(schema, tabela_nome, n_linhas)
-            
-            print(f"  → Gerando {n_linhas} registros via IA...")
-            resposta = generate_data(prompt)
-            
-            try:
-                # Parse do JSON
-                dados_json = json.loads(resposta)
-                insert_data_from_json(conexao, tabela_nome, dados_json)
-                print(f"✓ Tabela `{tabela_nome.upper()}` populada com sucesso")
-                
-            except json.JSONDecodeError as e:
-                print(f"Erro ao fazer parse do JSON para `{tabela_nome}`: {e}")
-                print(f"Resposta recebida: {resposta[:200]}...")
-                continue
-            except ValueError as e:
-                print(f"Erro nos dados para `{tabela_nome}`: {e}")
-                continue
-                
-        except (mysql.connector.Error, ValueError, json.JSONDecodeError) as e:
-            print(f"Erro ao processar `{tabela_nome}`: {e}")
-            continue
-
-
-def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
-    """     
-        Gera dados a partir de um prompt utilizando um modelo da OpenAI.
-        Parâmetros:
-            prompt (str): Texto de entrada que será enviado ao modelo para geração de dados.
-            modelo (str, opcional): Nome do modelo OpenAI a ser utilizado. Padrão é "gpt-4o-mini".
-            temperatura (float, opcional): Grau de aleatoriedade na geração do texto. Padrão é 0.4.
-        Retorna:
-            str: Texto gerado pelo modelo OpenAI em resposta ao prompt fornecido.
-    """
-
-    # Gera dados usando o modelo OpenAI
-    response = openai.chat.completions.create(
-        model=modelo,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperatura,
-    )
-    return response.choices[0].message.content
+    # Remove texto antes e depois do JSON
+    lines = response.split('\n')
+    start_idx = -1
+    end_idx = -1
+    
+    for i, line in enumerate(lines):
+        line_stripped = line.strip()
+        if line_stripped.startswith('{'):
+            start_idx = i
+            break
+    
+    for i in range(len(lines) - 1, -1, -1):
+        line_stripped = lines[i].strip()
+        if line_stripped.endswith('}'):
+            end_idx = i
+            break
+    
+    if start_idx != -1 and end_idx != -1:
+        json_lines = lines[start_idx:end_idx + 1]
+        return '\n'.join(json_lines)
+    
+    return response.strip()
 
 
 def insert_data(conexao, nome_tabela, campos, dados):
@@ -680,169 +645,446 @@ def create_placeholder_image(nome_especie, tamanho=(400, 300)):
         return None
 
 
-def populate_taxon_table(conexao):
+def populate_all_tables(conexao, n_linhas=10):
     """
-    Popula a tabela Taxon com a taxonomia completa para as espécies.
+    Popula todas as tabelas usando o novo formato JSON com ordem correta de dependências.
+    Inclui limpeza de resposta JSON, tratamento de erros melhorado e validação de dados.
     """
     schema = get_schema_info(conexao)
-    if 'taxon' not in schema:
-        print("Tabela `TAXON` não encontrada no banco de dados.")
-        return
+    
+    # ORDEM CORRETA respeitando dependências de chave estrangeira
+    ordem = [
+        "taxon",           # Base da taxonomia - não tem dependências
+        "hierarquia",      # Depende de taxon
+        "especie",         # Depende de taxon (gênero)
+        "especime",        # Depende de especie
+        "local_de_coleta", # Independente
+        "projeto",         # Movido antes para resolver dependências
+        "amostra",         # Depende de especie e local_de_coleta
+        "funcionario",     # Independente
+        "categoria",       # Independente  
+        "laboratorio",     # Independente
+        "financiador",     # Independente
+        "equipamento",     # Independente
+        "midia",           # Depende de especime
+        "artigo",          # Depende de projeto
+        "proj_func",       # Depende de projeto e funcionario
+        "proj_esp",        # Depende de projeto e especie
+        "proj_cat",        # Depende de projeto e categoria
+        "contrato",        # Depende de funcionario e laboratorio
+        "financiamento",   # Depende de projeto e financiador
+        "registro_de_uso"  # Depende de funcionario e equipamento
+    ]
+    
+    cursor = conexao.cursor()
+    cursor.execute("SHOW TABLES")
+    tabelas_existentes = [linha[0].lower() for linha in cursor.fetchall()]
+    cursor.close()
+    
+    # Filtra apenas tabelas que existem no banco
+    tabelas_ordenadas = [t for t in ordem if t in tabelas_existentes]
+    
+    print(f"\nIniciando população de {len(tabelas_ordenadas)} tabelas...")
+    print(f"Ordem de execução: {' → '.join([t.upper() for t in tabelas_ordenadas])}")
 
-    # Gera o prompt para preencher toda a taxonomia
-    prompt = """
-    Gere uma taxonomia completa para espécies fictícias. A taxonomia deve incluir os seguintes níveis:
-    - Domínio
-    - Reino
-    - Filo
-    - Classe
-    - Ordem
-    - Família
-    - Gênero
+    sucessos_totais = 0
+    erros_totais = 0
+    tabelas_processadas = 0
 
-    Cada nível deve ser coerente com o anterior. Retorne os dados no seguinte formato JSON:
-    {
-        "registros": [
-            {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
-            {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
-            {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"},
-            {"ID_Tax": 4, "Tipo": "Classe", "Nome": "Mammalia"},
-            {"ID_Tax": 5, "Tipo": "Ordem", "Nome": "Primates"},
-            {"ID_Tax": 6, "Tipo": "Família", "Nome": "Hominidae"},
-            {"ID_Tax": 7, "Tipo": "Gênero", "Nome": "Homo"}
-        ]
-    }
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    for tabela_nome in tabelas_ordenadas:
+        print(f"\n{'='*70}")
+        print(f"Processando tabela: `{tabela_nome.upper()}`")
+        
+        try:
+            # Verifica se a tabela já tem dados
+            cursor = conexao.cursor()
+            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
+            total_existente = cursor.fetchone()[0]
+            cursor.close()
+            
+            if total_existente > 0:
+                print(f"Tabela `{tabela_nome.upper()}` já contém {total_existente} registros. Pulando...")
+                continue
+            
+            # TRATAMENTO ESPECIAL PARA TABELA TAXON
+            if tabela_nome.lower() == 'taxon':
+                print("Aplicando tratamento especial para a tabela `Taxon`...")
+                resultado = populate_taxon_table(conexao)
+                if resultado:
+                    sucessos_totais += 1
+                    tabelas_processadas += 1
+                else:
+                    erros_totais += 1
+                continue
+
+            # TRATAMENTO ESPECIAL PARA TABELA MIDIA  
+            if tabela_nome.lower() == 'midia':
+                print("Preenchendo tabela `Midia` com imagens reais...")
+                resultado = populate_midia_table(conexao)
+                if resultado:
+                    sucessos_totais += 1
+                    tabelas_processadas += 1
+                else:
+                    erros_totais += 1
+                continue
+
+            # VERIFICAÇÃO DE DEPENDÊNCIAS ANTES DE GERAR DADOS
+            dependencias_ok = verify_dependencies(conexao, tabela_nome, schema)
+            if not dependencias_ok:
+                print(f"Pulando `{tabela_nome.upper()}`: dependências não atendidas")
+                erros_totais += 1
+                continue
+
+            # GERAÇÃO DE DADOS VIA IA PARA OUTRAS TABELAS
+            print(f"Gerando {n_linhas} registros via IA...")
+            
+            # Ajusta número de linhas baseado nas dependências disponíveis
+            n_linhas_ajustado = adjust_row(conexao, tabela_nome, n_linhas)
+            
+            # Escolhe o prompt adequado
+            if tabela_nome.lower() == 'midia':
+                prompt = build_prompt_for_media_table(schema, tabela_nome, n_linhas_ajustado)
+            else:
+                prompt = build_prompt(schema, tabela_nome, n_linhas_ajustado)
+            
+            # Gera dados com retry em caso de erro
+            resposta = None
+            max_tentativas = 3
+            
+            for tentativa in range(1, max_tentativas + 1):
+                try:
+                    print(f"Tentativa {tentativa}/{max_tentativas}")
+                    resposta = generate_data(prompt)
+                    
+                    if resposta and resposta.strip():
+                        break
+                    else:
+                        print(f"Resposta vazia na tentativa {tentativa}")
+                        
+                except Exception as e:
+                    print(f"Erro na tentativa {tentativa}: {e}")
+                    if tentativa == max_tentativas:
+                        raise
+                    time.sleep(2)  # Pausa entre tentativas
+            
+            if not resposta:
+                print(f"Falha ao gerar dados para `{tabela_nome.upper()}` após {max_tentativas} tentativas")
+                erros_totais += 1
+                continue
+            
+            # Limpa a resposta antes do parse
+            resposta_limpa = clean_json_response(resposta)
+            
+            if not resposta_limpa.strip():
+                print(f"Resposta vazia após limpeza para `{tabela_nome.upper()}`")
+                print(f"Resposta original: {resposta[:100]}...")
+                erros_totais += 1
+                continue
+            
+            try:
+                # Parse e validação do JSON
+                dados_json = json.loads(resposta_limpa)
+                
+                if not isinstance(dados_json, dict) or "registros" not in dados_json:
+                    print(f"Estrutura JSON inválida para `{tabela_nome.upper()}`")
+                    print(f"Esperado: {{'registros': [...]}}")
+                    print(f"Recebido: {str(dados_json)[:100]}...")
+                    erros_totais += 1
+                    continue
+                
+                registros = dados_json["registros"]
+                if not registros:
+                    print(f"Nenhum registro gerado para `{tabela_nome.upper()}`")
+                    continue
+                
+                # Valida estrutura dos registros
+                if not validate_structure(registros, schema.get(tabela_nome, [])):
+                    print(f"Estrutura de registros inválida para `{tabela_nome.upper()}`")
+                    erros_totais += 1
+                    continue
+                
+                # Insere os dados
+                print(f"Inserindo {len(registros)} registros...")
+                resultado_insercao = insert_data_from_json(conexao, tabela_nome, dados_json)
+                
+                if resultado_insercao is not False:  # Considera sucesso se não retornar False explicitamente
+                    print(f"Tabela `{tabela_nome.upper()}` processada com sucesso")
+                    sucessos_totais += 1
+                    tabelas_processadas += 1
+                else:
+                    print(f"Falha na inserção para `{tabela_nome.upper()}`")
+                    erros_totais += 1
+                
+            except json.JSONDecodeError as e:
+                print(f"Erro ao fazer parse do JSON para `{tabela_nome.upper()}`: {e}")
+                print(f"Resposta limpa: {resposta_limpa[:200]}...")
+                erros_totais += 1
+                continue
+                
+            except ValueError as e:
+                print(f"Erro nos dados para `{tabela_nome.upper()}`: {e}")
+                erros_totais += 1
+                continue
+                
+        except (mysql.connector.Error, Exception) as e:
+            print(f"Erro crítico ao processar `{tabela_nome.upper()}`: {e}")
+            erros_totais += 1
+            continue
+    
+    # Relatório final
+    print(f"\n{'='*70}")
+    print("RELATÓRIO FINAL DA POPULAÇÃO DE TABELAS")
+    print(f"{'='*70}")
+    print(f"Tabelas processadas com sucesso: {sucessos_totais}")
+    print(f"Tabelas com erro: {erros_totais}")
+    print(f"Total de tabelas processadas: {tabelas_processadas}")
+    print(f"Taxa de sucesso: {(sucessos_totais/(sucessos_totais+erros_totais)*100):.1f}%" if (sucessos_totais+erros_totais) > 0 else "N/A")
+    print(f"{'='*70}")
+    
+    return sucessos_totais, erros_totais
+
+
+def verify_dependencies(conexao, tabela_nome, schema):
     """
-    print("  → Gerando taxonomia completa via IA...")
-    resposta = generate_data(prompt)
-
-    # Valida a resposta antes de processar
-    if not resposta.strip():
-        print("Erro: Resposta da IA está vazia.")
-        return
-
+    Verifica se as dependências de uma tabela estão satisfeitas antes de popular.
+    """
+    dependencias = {
+        'hierarquia': ['taxon'],
+        'especie': ['taxon'],
+        'especime': ['especie'],
+        'amostra': ['especie', 'local_de_coleta'],
+        'midia': ['especime'],
+        'artigo': ['projeto'],
+        'proj_func': ['projeto', 'funcionario'],
+        'proj_esp': ['projeto', 'especie'],
+        'proj_cat': ['projeto', 'categoria'],
+        'contrato': ['funcionario', 'laboratorio'],
+        'financiamento': ['projeto', 'financiador'],
+        'registro_de_uso': ['funcionario', 'equipamento']
+    }
+    
+    if tabela_nome not in dependencias:
+        return True  # Tabela sem dependências
+    
+    cursor = conexao.cursor()
     try:
-        # Parse do JSON
-        dados_json = json.loads(resposta)
+        for tabela_dependencia in dependencias[tabela_nome]:
+            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_dependencia}`")
+            count = cursor.fetchone()[0]
+            if count == 0:
+                print(f"Dependência não atendida: tabela `{tabela_dependencia.upper()}` está vazia")
+                return False
+        return True
+    except mysql.connector.Error as e:
+        print(f"Erro ao verificar dependências: {e}")
+        return False
+    finally:
+        cursor.close()
+
+
+def adjust_row(conexao, tabela_nome, n_linhas_original):
+    """
+    Ajusta o número de linhas baseado nas dependências disponíveis.
+    """
+    # Para tabelas que dependem de outras, limita o número de registros
+    limitadores = {
+        'especime': 'especie',
+        'amostra': 'especie', 
+        'midia': 'especime',
+        'artigo': 'projeto',
+        'proj_func': 'funcionario',
+        'proj_esp': 'especie',
+        'proj_cat': 'categoria',
+        'contrato': 'funcionario',
+        'financiamento': 'projeto',
+        'registro_de_uso': 'funcionario'
+    }
+    
+    if tabela_nome not in limitadores:
+        return n_linhas_original
+    
+    cursor = conexao.cursor()
+    try:
+        tabela_pai = limitadores[tabela_nome]
+        cursor.execute(f"SELECT COUNT(*) FROM `{tabela_pai}`")
+        count_pai = cursor.fetchone()[0]
+        
+        # Limita a no máximo 2x o número de registros na tabela pai
+        limite = min(n_linhas_original, max(1, count_pai * 2))
+        
+        if limite != n_linhas_original:
+            print(f"Ajustando número de linhas de {n_linhas_original} para {limite} (baseado em {tabela_pai.upper()})")
+        
+        return limite
+        
+    except mysql.connector.Error:
+        return n_linhas_original
+    finally:
+        cursor.close()
+
+
+def validate_structure(registros, schema_colunas):
+    """
+    Valida se os registros têm a estrutura esperada baseada no schema.
+    """
+    if not registros or not isinstance(registros, list):
+        return False
+    
+    if not schema_colunas:
+        return True  # Se não temos schema, aceita qualquer estrutura
+    
+    # Pega os nomes das colunas esperadas
+    colunas_esperadas = {col['nome'] for col in schema_colunas}
+    
+    # Verifica o primeiro registro como amostra
+    primeiro_registro = registros[0]
+    if not isinstance(primeiro_registro, dict):
+        return False
+    
+    colunas_recebidas = set(primeiro_registro.keys())
+    
+    # Verifica se pelo menos 50% das colunas esperadas estão presentes
+    intersecao = colunas_esperadas.intersection(colunas_recebidas)
+    cobertura = len(intersecao) / len(colunas_esperadas) if colunas_esperadas else 1
+    
+    return cobertura >= 0.5
+
+
+def populate_taxon_table(conexao):
+    """
+    Versão melhorada para popular a tabela Taxon.
+    """
+    try:
+        print("Gerando taxonomia completa via IA...")
+        
+        prompt = """
+        Gere uma taxonomia completa para espécies de laboratório. Inclua exatamente 25 entradas cobrindo:
+        
+        1. Domínio: Eukaryota
+        2. Reinos: Animalia, Plantae, Fungi
+        3. Filos: Chordata, Arthropoda, Mollusca, Magnoliophyta
+        4. Classes: Mammalia, Aves, Insecta, Gastropoda
+        5. Ordens: Primates, Carnivora, Diptera, Lepidoptera  
+        6. Famílias: Hominidae, Felidae, Drosophilidae, Nymphalidae
+        7. Gêneros: Homo, Panthera, Drosophila, Danaus
+
+        FORMATO DE RESPOSTA OBRIGATÓRIO - SOMENTE JSON:
+        {
+            "registros": [
+                {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
+                {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
+                {"ID_Tax": 3, "Tipo": "Reino", "Nome": "Plantae"}
+            ]
+        }
+        
+        Use IDs sequenciais de 1 a 25. Responda APENAS com o JSON válido.
+        """
+        
+        resposta = generate_data(prompt, temperatura=0.2)  # Baixa temperatura para mais consistência
+        resposta_limpa = clean_json_response(resposta)
+        
+        if not resposta_limpa.strip():
+            print("Resposta vazia da IA para Taxon")
+            return False
+        
+        dados_json = json.loads(resposta_limpa)
         registros = dados_json.get("registros", [])
+        
         if not registros:
-            print("Nenhum registro gerado para a tabela `Taxon`.")
-            return
-
-        # Insere os dados na tabela Taxon
+            print("Nenhum registro gerado para Taxon")
+            return False
+        
         cursor = conexao.cursor()
+        sucessos = 0
+        erros = 0
+        
         for registro in registros:
-            query = "INSERT INTO Taxon (ID_Tax, Tipo, Nome) VALUES (%s, %s, %s)"
-            valores = (registro["ID_Tax"], registro["Tipo"], registro["Nome"])
-            cursor.execute(query, valores)
-
+            try:
+                query = "INSERT INTO Taxon (ID_Tax, Tipo, Nome) VALUES (%s, %s, %s)"
+                valores = (registro["ID_Tax"], registro["Tipo"], registro["Nome"])
+                cursor.execute(query, valores)
+                sucessos += 1
+            except mysql.connector.Error as e:
+                print(f"Erro ao inserir {registro}: {e}")
+                erros += 1
+        
         conexao.commit()
         cursor.close()
-        print("✓ Tabela `Taxon` populada com sucesso")
-    except json.JSONDecodeError as e:
-        print(f"Erro ao fazer parse do JSON para `Taxon`: {e}")
-        print(f"Resposta recebida: {resposta[:200]}...")
-    except mysql.connector.Error as e:
-        print(f"Erro ao inserir dados na tabela `Taxon`: {e}")
+        
+        print(f"Taxon: {sucessos} sucessos, {erros} erros")
+        return sucessos > 0
+        
+    except (json.JSONDecodeError, mysql.connector.Error, Exception) as e:
+        print(f"Erro crítico ao popular Taxon: {e}")
+        return False
 
 
-def populate_midia_table(conexao, delay_entre_requisicoes=2):
+def populate_midia_table(conexao, delay_entre_requisicoes=1):
     """
-    Popula a tabela Midia com imagens REAIS buscadas na web
-    baseadas nos nomes das espécies cadastradas no banco.
-    
-    Esta função evita inserir dados aleatórios no campo BLOB,
-    buscando imagens reais ou criando placeholders específicos.
+    Versão melhorada para popular a tabela Midia.
     """
     cursor = conexao.cursor()
     
     try:
-        # Verifica se a tabela Midia já tem dados
-        cursor.execute("SELECT COUNT(*) FROM Midia")
-        count = cursor.fetchone()[0]
-        if count > 0:
-            print(f"Tabela Midia já contém {count} registros. Pulando...")
-            return
+        # Verifica dependências
+        cursor.execute("SELECT COUNT(*) FROM Especime")
+        count_especime = cursor.fetchone()[0]
         
-        # Busca todas as espécies cadastradas
-        cursor.execute("SELECT ID_Esp, Nome FROM Especie")
-        especies = cursor.fetchall()
+        if count_especime == 0:
+            print("Nenhum espécime encontrado. Tabela Especime deve ser populada primeiro.")
+            return False
         
-        if not especies:
-            print("Nenhuma espécie encontrada. Popule a tabela Especie primeiro.")
-            print("   Use a opção 7 para popular as tabelas na ordem correta.")
-            return
+        print(f"Processando {count_especime} espécimes para mídia...")
         
-        print(f"✓ Encontradas {len(especies)} espécies. Buscando imagens REAIS...")
+        # Busca espécimes com suas espécies
+        cursor.execute("""
+            SELECT e.ID_Especime, s.Nome, s.ID_Esp 
+            FROM Especime e 
+            JOIN Especie s ON e.ID_Esp = s.ID_Esp 
+            LIMIT 10
+        """)
+        especimes = cursor.fetchall()
+        
+        if not especimes:
+            print("Erro ao buscar espécimes com espécies")
+            return False
         
         sucessos = 0
         falhas = 0
         
-        for idx, (id_esp, nome_especie) in enumerate(especies, 1):
-            print(f"[{idx}/{len(especies)}] Processando: {nome_especie}")
+        for idx, (id_especime, nome_especie, id_esp) in enumerate(especimes, 1):
+            print(f"  [{idx}/{len(especimes)}] {nome_especie}")
             
-            # Primeiro tenta buscar imagem real na web
-            especie_imagem_bytes = search_image_web(nome_especie)
+            # Busca ou cria imagem
+            imagem_bytes = search_image_web(nome_especie, timeout=5)
+            if not imagem_bytes:
+                imagem_bytes = create_placeholder_image(nome_especie)
             
-            # Se não conseguir, cria um placeholder ESPECÍFICO (não aleatório)
-            if not especie_imagem_bytes:
-                print(f"  → Criando placeholder específico para '{nome_especie}'")
-                especie_imagem_bytes = create_placeholder_image(nome_especie)
-            else:
-                print(f"  → ✓ Imagem real encontrada na web para '{nome_especie}'")
-            
-            if especie_imagem_bytes:
+            if imagem_bytes:
                 try:
-                    # Busca um espécime desta espécie para associar à mídia
                     cursor.execute(
-                        "SELECT ID_Especime FROM Especime WHERE ID_Esp = %s LIMIT 1",
-                        (id_esp,)
+                        "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)",
+                        (id_especime, f"Foto - {nome_especie}", imagem_bytes)
                     )
-                    especime = cursor.fetchone()
-                    
-                    if especime:
-                        id_especime = especime[0]
-                        # Insere na tabela Midia (ID_Midia é AUTO_INCREMENT)
-                        cursor.execute(
-                            "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)",
-                            (id_especime, f"Imagem - {nome_especie}", especie_imagem_bytes)
-                        )
-                        
-                        # Pega o ID da mídia inserida
-                        id_midia = cursor.lastrowid
-                        
-                        sucessos += 1
-                        print(f"  → ✓ Sucesso! ID_Midia: {id_midia}")
-                    else:
-                        print(f"  → Nenhum espécime encontrado para '{nome_especie}'")
-                        falhas += 1
-                    
+                    sucessos += 1
+                    print(f"Mídia inserida")
                 except mysql.connector.Error as e:
-                    print(f"  → Erro ao inserir mídia para '{nome_especie}': {e}")
+                    print(f"Erro: {e}")
                     falhas += 1
             else:
-                print(f"  → Não foi possível obter imagem para '{nome_especie}'")
                 falhas += 1
+                print(f"Falha ao obter imagem")
             
-            # Delay para não sobrecarregar APIs
-            if idx < len(especies):  # Não faz delay na última iteração
+            if idx < len(especimes):
                 time.sleep(delay_entre_requisicoes)
         
         conexao.commit()
-        print(f"\n{'='*60}")
-        print("PROCESSAMENTO DA TABELA MIDIA CONCLUÍDO:")
-        print(f"   • ✓ Sucessos: {sucessos}")
-        print(f"   • Falhas: {falhas}")
-        print(f"   • Total processado: {len(especies)}")
-        print(f"   • Taxa de sucesso: {(sucessos/len(especies)*100):.1f}%")
-        print(f"{'='*60}")
+        print(f"Mídia: {sucessos} sucessos, {falhas} falhas")
+        return sucessos > 0
         
     except mysql.connector.Error as e:
-        print(f"Erro de banco de dados ao popular tabela Midia: {e}")
-        conexao.rollback()
-    except OSError as e:
-        print(f"Erro de sistema ao popular tabela Midia: {e}")
+        print(f"Erro ao popular Midia: {e}")
+        return False
     finally:
         cursor.close()
 
