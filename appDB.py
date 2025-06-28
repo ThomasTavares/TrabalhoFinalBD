@@ -223,7 +223,7 @@ def show_table(conexao, tabela):
     if tabela not in tabelas:
         print(f"Tabela '{tabela.upper()}' não encontrada.")
         cursor.close()
-        return
+        return 0
 
     try:
         cursor.execute(f"SELECT * FROM `{tabela}`")
@@ -1444,34 +1444,51 @@ def truncate_value(value, max_length):
     return value
 
 
+def format_check(resultado, campo=None):
+    '''Formata e exibe os valores permitidos de uma CHECK constraint.
+    Parâmetros:
+        resultado: Resultado da consulta de CHECK constraints.
+        campo: (opcional) Nome do campo específico para filtrar os resultados.
+    Retorna:
+        None.
+    '''
+    check = resultado[1] if isinstance(resultado, tuple) else resultado
+    match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check, re.IGNORECASE)
+    
+    if match:
+        if campo and campo.lower() != match.group(1).lower():
+            return
+        
+        atributo = match.group(1)
+        valores = match.group(2)
+        
+        valores_formatados = re.findall(r"'([^']+)\'", valores)
+        print(f"Valores permitidos para '{atributo}': {', '.join(valores_formatados)}")
+
 def check_ckeck(conexao, tabela, campo=None):
     '''
     Verifica se a tabela possui CHECK constraints
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
+        tabela: Nome da tabela a ser verificada.
+        campo: (opcional) Nome do campo específico para filtrar os resultados.
     Retorna:
         None.
     '''
     cursor = conexao.cursor()
-
+    cursor.execute("SET NAMES utf8mb4;")
     
-    query = """
-    SELECT cc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
-    FROM information_schema.check_constraints cc
-    JOIN information_schema.table_constraints tc
-    ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
-    WHERE tc.TABLE_NAME = %s AND tc.TABLE_SCHEMA = %s AND tc.CONSTRAINT_TYPE = 'CHECK';
-    """
-    cursor.execute(query, (tabela, conexao.database))
-    resultado = cursor.fetchall()
+    cursor.execute(f"SELECT cc.CONSTRAINT_NAME, cc.CHECK_CLAUSE FROM information_schema.check_constraints cc JOIN information_schema.table_constraints tc ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME WHERE tc.TABLE_NAME = '{tabela}' AND tc.TABLE_SCHEMA = 'trabalho_final' AND tc.CONSTRAINT_TYPE = 'CHECK';")
+    resultados = cursor.fetchall()
     
-    if resultado and campo:
-        valores = [r for r in resultado if campo.lower() in r[0].lower()]
-        if valores:
-            print(f"Valores permitidos para {campo}: ")
-    elif resultado and not campo:
-        for constraint in resultado:
-            print(f"Valores permitidos para {constraint[0]}: {constraint[1]}")
+    print("\n")
+    if campo:
+        for resultado in resultados:
+            format_check(resultado, campo)
+    else:
+        for resultado in resultados:
+            format_check(resultado)
+                
     cursor.close()
 
 
@@ -1483,10 +1500,10 @@ def check_type(campo, tipo_campo):
     Retorna:
         valor (int, float, str, None): Valor convertido para o tipo correto ou None se inválido.
     """
-    if 'timestamp' in tipo_campo.lower():
+    if 'timestamp' in tipo_campo:
             valor = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
             print(f"• {campo} ({tipo_campo}): {valor} [AUTO-GERADO]")
-    elif 'blob' in tipo_campo.lower():
+    elif 'blob' in tipo_campo:
         valor_input = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
         if valor_input.lower() == 'null' or valor_input == '':
             valor = None
@@ -1503,28 +1520,28 @@ def check_type(campo, tipo_campo):
         # CORRIGINDO: processamento do valor baseado no tipo
         if valor_input.lower() == 'null' or valor_input == '':
             valor = None
-        elif 'int' in tipo_campo.lower():
+        elif 'int' in tipo_campo:
             try:
                 valor = int(valor_input)
             except ValueError:
                 print(f"Valor inválido para {campo}. Usando 0.")
                 valor = 0
-        elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
+        elif 'decimal' in tipo_campo or 'float' in tipo_campo:
             try:
                 valor = float(valor_input)
             except ValueError:
                 print(f"Valor inválido para {campo}. Usando 0.0.")
                 valor = 0.0
-        elif 'date' in tipo_campo.lower():
+        elif 'date' in tipo_campo:
             # Verifica se a data está no formato YYYY-MM-DD
             if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
                 valor = valor_input
             else:
                 print(f"Formato de data inválido para {campo}. Usando data atual.")
                 valor = (datetime.now()).strftime('%Y-%m-%d')
-        elif 'varchar' in tipo_campo.lower():
+        elif 'varchar' in tipo_campo:
             # Extrai o tamanho máximo do varchar
-            match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
+            match = re.search(r'varchar\((\d+)\)', tipo_campo)
             if match:
                 max_len = int(match.group(1))
                 if len(valor_input) > max_len:
@@ -1589,7 +1606,6 @@ def insert_by_user(conexao):
         status_str = f" [{', '.join(status)}]" if status else ""
         print(f"\t• {nome_col}: {tipo_col}{status_str}")
     
-    print("\n")
     check_ckeck(conexao, tabela_nome)
     
     # Exibe valores já registrados na tabela
@@ -1602,7 +1618,7 @@ def insert_by_user(conexao):
     for campo in colunas:
         # Busca informações do campo
         campo_info = next((col for col in colunas_detalhadas if col[0] == campo), None)
-        tipo_campo = campo_info[1] if campo_info else "unknown"
+        tipo_campo = (campo_info[1] if campo_info else "unknown").lower()
         
         # Solicita valor do usuário
         valor = check_type(campo, tipo_campo)
@@ -1771,6 +1787,7 @@ def update_by_user(conexao):
     num_linhas = show_table(conexao, tabela_nome)
     
     if num_linhas == 0:
+        cursor.close()
         return
 
     campo = input("\nCampo a atualizar: ").strip()
@@ -1780,7 +1797,8 @@ def update_by_user(conexao):
     
     cursor.execute(f"DESCRIBE `{tabela_nome}`")
     colunas_detalhadas = cursor.fetchall()
-    tipo_campo = colunas_detalhadas[0][1] if campo in [col[0] for col in colunas_detalhadas] else None
+    campo_info = next((col for col in colunas_detalhadas if col[0] == campo), None)
+    tipo_campo = (campo_info[1] if campo_info else "unknown").lower()
     cursor.close()
     
     print("\nNovo valor:")
