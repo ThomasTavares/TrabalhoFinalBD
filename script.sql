@@ -6,7 +6,7 @@ CREATE TABLE Taxon (
 
 CREATE TABLE Hierarquia (
 	ID_Tax integer PRIMARY KEY,
-	ID_TaxTopo integer,
+	ID_TaxTopo integer NOT NULL,
 	FOREIGN KEY(ID_Tax) REFERENCES Taxon (ID_Tax),
 	FOREIGN KEY(ID_TaxTopo) REFERENCES Taxon (ID_Tax));
 

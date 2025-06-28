@@ -214,7 +214,7 @@ def show_table(conexao, tabela):
         conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
         tabela (str): Nome da tabela a ser exibida.
     Retorna:
-        None
+        int: Número de linhas exibidas na tabela, ou 0 se a tabela estiver vazia.
     """
     cursor = conexao.cursor()
     
@@ -240,6 +240,9 @@ def show_table(conexao, tabela):
         print(f"Erro ao consultar: {err}")
     finally:
         cursor.close()
+    
+    # Retorna o número de linhas exibidas
+    return len(linhas)
 
 
 def show_tables(conexao):
@@ -752,6 +755,34 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
         cursor.close()
 
 
+def check_ckeck(conexao, tabela):
+    '''
+    Verifica se a tabela possui CHECK constraints
+    Parâmetros:
+        conexao: Objeto de conexão com o banco de dados MySQL.
+    Retorna:
+        list: Lista de tuplas contendo o nome da constraint e a cláusula CHECK. Se não houver constraints, retorna uma lista vazia.
+    '''
+    cursor = conexao.cursor()
+    
+    query = """
+    SELECT cc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+    FROM information_schema.check_constraints cc
+    JOIN information_schema.table_constraints tc
+    ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+    WHERE tc.TABLE_NAME = %s AND tc.TABLE_SCHEMA = %s AND tc.CONSTRAINT_TYPE = 'CHECK';
+    """
+    cursor.execute(query, (tabela, conexao.database))
+    resultado = cursor.fetchall()
+    
+    if resultado:
+        for constraint in resultado:
+            print(f"Valores permitidos para {constraint[0]}: {constraint[1]}")
+    cursor.close()
+    
+    return resultado
+
+
 def insert_by_user(conexao):
     """
     Solicita ao usuário o nome da tabela, os campos e valores a serem inseridos, e realiza a operação.
@@ -763,38 +794,10 @@ def insert_by_user(conexao):
     cursor = conexao.cursor()
 
     # Exibe tabelas disponíveis
-    cursor.execute("SHOW TABLES;")
-    tabelas = [t[0] for t in cursor.fetchall()]
-    if not tabelas:
-        print("Nenhuma tabela encontrada.")
-        cursor.close()
-        return
-    
-    # Obtém e exibe o schema de cada tabela
-    for tabela_nome in tabelas:
-        cursor.execute(f"DESCRIBE `{tabela_nome}`")
-        colunas_info = cursor.fetchall()
-
-        print(f"\nTabela: {tabela_nome.upper()}")
-        print("Colunas:")
-        for col_info in colunas_info:
-            nome_col = col_info[0]
-            tipo_col = col_info[1]
-            key_col = col_info[3]
-            
-            # Formata informações extras
-            extras = []
-            if key_col == 'PRI':
-                extras.append('PRIMARY KEY')
-            elif key_col == 'MUL':
-                extras.append('FOREIGN KEY')
-
-            extras_str = f" ({', '.join(extras)})" if extras else ""
-            print(f"\t• {nome_col}: {tipo_col}{extras_str}")
+    tabelas = print_tables(conexao)
 
     # Solicita nome da tabela
-    print("\n" + "="*50 + "\n")
-    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip()
+    tabela_nome = input("\nDigite o nome da tabela para inserir dados: ").strip().lower()
     
     if tabela_nome not in tabelas:
         print(f"Tabela `{tabela_nome.upper()}` não encontrada.")
@@ -1052,12 +1055,14 @@ def update_by_user(conexao):
     print("\nTabelas Disponíveis:")
     print_tables(conexao)
     
-    tabela_nome = input("\nSelecione a Tabela: ").strip()
+    tabela_nome = input("\nSelecione a Tabela: ").strip().lower()
     
     print("\nValores registrados:")
-    show_table(conexao, tabela_nome)
-    
+    num_linhas = show_table(conexao, tabela_nome)
     cursor.close()
+    
+    if num_linhas == 0:
+        return
 
     campo = input("\nCampo a atualizar: ").strip()
     valor = input("Novo valor: ").strip()
@@ -1084,7 +1089,7 @@ def delete_by_user(conexao):
     print("\n" + "="*50)
     print_tables(conexao)
     
-    tabela_nome = input("\nSelecione a Tabela: ").strip()
+    tabela_nome = input("\nSelecione a Tabela: ").strip().lower()
     
     print("\nValores registrados:")
     show_table(conexao, tabela_nome)
@@ -1504,4 +1509,3 @@ if __name__ == "__main__":
     finally:
             if 'con' in locals() and con.is_connected():
                 exit_db(con)
-    
