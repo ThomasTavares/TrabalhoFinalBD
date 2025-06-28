@@ -3,7 +3,7 @@ CREATE TABLE Taxon (
 	Tipo varchar(10) NOT NULL,
 	Nome varchar(50) NOT NULL,
 	UNIQUE (Tipo, Nome),
-	CHECK (Tipo IN ('Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero')));
+	CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero')));
 
 CREATE TABLE Hierarquia (
 	ID_Tax integer PRIMARY KEY,
@@ -55,7 +55,7 @@ CREATE TABLE Projeto (
 	Status varchar(50) NOT NULL,
 	Dt_Inicio date,
 	Dt_Fim date,
-	CHECK (Status IN ('Planejado', 'Ativo', 'Suspenso', 'Cancelado', 'Encerrado')));
+	CHECK (Status IN ('Planejado', 'Ativo', 'Suspenso', 'Cancelado', 'Concluído')));
     
 CREATE TABLE Artigo (
 	ID_Artigo integer PRIMARY KEY,

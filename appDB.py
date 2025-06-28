@@ -331,7 +331,7 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas: int, contexto_dados: 
     contexto_banco = """
     CONTEXTO DO BANCO DE DADOS:
     Este é um sistema de gerenciamento para um laboratório de taxonomia que lida com:
-    - Classificação taxonômica de espécies (Dominio → Reino → Filo → Classe → Ordem → Familia → Genero → Especie)
+    - Classificação taxonômica de espécies (Domínio → Reino → Filo → Classe → Ordem → Família → Gênero → Espécie)
     - Espécimes e amostras biológicas coletadas
     - Projetos de pesquisa científica e artigos publicados
     - Funcionários, laboratórios e equipamentos
@@ -375,8 +375,8 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas: int, contexto_dados: 
     
     # Instruções específicas por tabela
     instrucoes_especificas = {
-        'hierarquia': 'Crie relações hierárquicas válidas: Dominio → Reino → Filo → Classe → Ordem → Familia → Genero. Use os IDs dos táxons já existentes.',
-        'especie': 'Use Generos já cadastrados. Nomes científicos reais (binomial). IUCN válidos: LC, NT, VU, EN, CR, EW, EX.',
+        'hierarquia': 'Crie relações hierárquicas válidas: Domínio → Reino → Filo → Classe → Ordem → Família → Gênero. Use os IDs dos táxons já existentes.',
+        'especie': 'Use gêneros já cadastrados. Nomes científicos reais (binomial). IUCN válidos: LC, NT, VU, EN, CR, EW, EX.',
         'especime': 'Referencie espécies já cadastradas. Descritivos realistas como "Espécime adulto macho", "Jovem fêmea".',
         'amostra': 'Use espécies e locais já cadastrados. Tipos: sangue, pele, osso, DNA, fezes, pelo, escama.',
         'artigo': 'Referencie projetos já cadastrados. Títulos científicos realistas, DOIs válidos.',
@@ -528,7 +528,6 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
                 print(f"  → Erro: Dados muito longos em {registro}")
             else:
                 print(f"  → Erro DB {err.errno}: {err} em {registro}")
-            raise
     
     conexao.commit()
     cursor.close()
@@ -671,7 +670,7 @@ def populate_all_tables(conexao, n_linhas=10, n_especies=20):
     ordem = [
         "taxon",           # Base da taxonomia - não tem dependências
         "hierarquia",      # Depende de taxon
-        "especie",         # Depende de taxon (Genero)
+        "especie",         # Depende de taxon (gênero)
         "especime",        # Depende de especie
         "local_de_coleta", # Independente
         "projeto",         # Movido antes para resolver dependências
@@ -1033,7 +1032,7 @@ def get_available_foreign_keys(conexao, tabela_nome):
             'ID_TaxTopo': 'SELECT ID_Tax, Tipo, Nome FROM Taxon ORDER BY ID_Tax'
         },
         'especie': {
-            'ID_Gen': 'SELECT ID_Tax, Nome FROM Taxon WHERE Tipo = "Genero" ORDER BY ID_Tax'
+            'ID_Gen': 'SELECT ID_Tax, Nome FROM Taxon WHERE Tipo = "Gênero" ORDER BY ID_Tax'
         },
         'especime': {
             'ID_Esp': 'SELECT ID_Esp, Nome FROM Especie ORDER BY ID_Esp'
@@ -1152,7 +1151,7 @@ def analyze_table_relationships(conexao, tabela_nome, tabelas_ja_populadas):
             },
             'especie': {
                 'tabela_pai': 'taxon',
-                'descricao': 'espécies por Genero',
+                'descricao': 'espécies por gênero',
                 'campos_relevantes': ['ID_Gen']
             },
             'especime': {
@@ -1284,32 +1283,32 @@ def populate_taxon_table(conexao, n_especies=250):
             Tipo varchar(10) NOT NULL,
             Nome varchar(50) NOT NULL,
             UNIQUE (Tipo, Nome),
-        CHECK (Tipo IN ('Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero'))); 
+        CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'))); 
         
         IMPORTANTE: Use EXATAMENTE estes tipos (respeitando acentos):
-        - Dominio
+        - Domínio
         - Reino  
         - Filo
         - Classe
         - Ordem
-        - Familia
-        - Genero
+        - Família
+        - Gênero
         
         NÃO use "Espécie" - apenas os 7 tipos acima.
         
         Exemplos de nomes para cada tipo:
-        - Dominio: Eukaryota, Bacteria, Archaea
+        - Domínio: Eukaryota, Bacteria, Archaea
         - Reino: Animalia, Plantae, Fungi, Protista
         - Filo: Chordata, Arthropoda, Mollusca, Cnidaria
         - Classe: Mammalia, Aves, Reptilia, Amphibia, Actinopterygii
         - Ordem: Primates, Carnivora, Rodentia, Chiroptera
-        - Familia: Hominidae, Felidae, Canidae, Muridae
-        - Genero: Homo, Panthera, Canis, Mus, Drosophila
+        - Família: Hominidae, Felidae, Canidae, Muridae
+        - Gênero: Homo, Panthera, Canis, Mus, Drosophila
 
         FORMATO DE RESPOSTA:
         {
             "registros": [
-                {"ID_Tax": 1, "Tipo": "Dominio", "Nome": "Eukaryota"},
+                {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
                 {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
                 {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"}
             ]
@@ -1339,7 +1338,7 @@ def populate_taxon_table(conexao, n_especies=250):
         erros = 0
         
         # Valida cada registro antes de inserir
-        tipos_validos = {'Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero'}
+        tipos_validos = {'Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'}
         
         for registro in registros:
             try:
@@ -1453,7 +1452,7 @@ def format_check(resultado, campo=None):
         None.
     '''
     check = resultado[1] if isinstance(resultado, tuple) else resultado
-    match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check.replace("\\'", "'") , re.IGNORECASE)
+    match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check, re.IGNORECASE)
     
     if match:
         if campo and campo.lower() != match.group(1).lower():
@@ -1463,7 +1462,7 @@ def format_check(resultado, campo=None):
         valores = match.group(2)
         
         valores_formatados = re.findall(r"'([^']+)'", valores)
-        print(f"\nValores permitidos para '{atributo}': {', '.join(valores_formatados)}")
+        print(f"Valores permitidos para '{atributo}': {', '.join(valores_formatados)}")
 
 
 def check_ckeck(conexao, tabela, campo=None):
@@ -1487,13 +1486,14 @@ def check_ckeck(conexao, tabela, campo=None):
     cursor.execute(query, (tabela, conexao.database))
     resultado = cursor.fetchall()
     
+    print("\n")
     if campo:
         for resultado in resultados:
             format_check(resultado, campo)
     else:
         for resultado in resultados:
             format_check(resultado)
-
+                
     cursor.close()
 
 
@@ -1648,8 +1648,9 @@ def insert_by_user(conexao):
     # Insere os dados
     try:
         insert_data(conexao, tabela_nome, colunas, [tuple(valores)])
-    except (mysql.connector.Error, ValueError):
-        print(f"Inserção falhou.")
+        print("Dados inseridos com sucesso!")
+    except (mysql.connector.Error, ValueError) as e:
+        print(f"Erro ao inserir dados: {e}")
     finally:
         cursor.close()
     print("\n" + "="*50)
