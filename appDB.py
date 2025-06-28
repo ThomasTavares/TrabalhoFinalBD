@@ -7,6 +7,7 @@ import ast
 import io
 import time
 import random
+import json
 from datetime import datetime
 from prettytable import PrettyTable
 from collections import defaultdict, deque
@@ -257,12 +258,13 @@ def show_tables(conexao):
 
     # Entrada do usuário
     entrada = input("\nDigite o nome da tabela que deseja consultar: ").strip().lower()
-    nome_real = tabelas[entrada]
-
+    
+    # Verificar se entrada existe antes de acessar
     if entrada not in tabelas:
         print(f"Tabela '{entrada.upper()}' não encontrada.")
         return
-
+    
+    nome_real = tabelas[entrada]
     print(f"\nTabela: {nome_real.upper()}")
     show_table(conexao, nome_real)
     
@@ -298,69 +300,247 @@ def get_schema_info(conexao):
 def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     """
     Gera um prompt para criação de dados fictícios para uma tabela específica de um schema.
-    Parâmetros:
-        schema (dict): Dicionário contendo o schema do banco de dados, onde as chaves são os nomes das tabelas e os valores são listas de dicionários com informações das colunas.
-        tabela_alvo (str): Nome da tabela para a qual os dados devem ser gerados.
-        n_linhas (int, opcional): Número de linhas de dados a serem geradas. Padrão é 20.
-    Retorna:
-        str: Prompt formatado solicitando a geração dos dados no formato de lista de tuplas Python.
+    NOTA: Para tabela Midia, use build_prompt_for_media_table() para tratamento especial de BLOB.
     """
     with open("script.sql", "r", encoding="utf-8") as f:
         script = f.read()
     
-    prompt = f"""
-    Com base no seguinte esquema de banco de dados:
+    # Monta informações detalhadas sobre o contexto do banco
+    contexto_banco = """
+    CONTEXTO DO BANCO DE DADOS:
+    Este é um sistema de gerenciamento para um laboratório de taxonomia que lida com:
+    - Classificação taxonômica de espécies (Domínio → Reino → Filo → Classe → Ordem → Família → Gênero → Espécie)
+    - Espécimes e amostras biológicas coletadas
+    - Projetos de pesquisa científica e artigos publicados
+    - Funcionários, laboratórios e equipamentos
+    - Financiamentos e contratos
+    - Mídia (imagens, áudios) dos espécimes
+    """
     
+    # Informações específicas sobre a tabela alvo
+    if tabela_alvo in schema:
+        campos_info = []
+        for col in schema[tabela_alvo]:
+            tipo_col = col['tipo']
+            # Tratamento especial para campos BLOB
+            if 'blob' in tipo_col.lower():
+                campos_info.append(f"- {col['nome']}: {tipo_col} (sempre null no JSON)")
+            else:
+                campos_info.append(f"- {col['nome']}: {tipo_col}")
+        campos_str = "\n".join(campos_info)
+    else:
+        campos_str = "Tabela não encontrada no schema"
+    
+    # Instruções específicas por tabela para dados mais realistas
+    instrucoes_especificas = {
+        'Taxon': 'Use nomes taxonômicos reais (ex: Animalia, Chordata, Mammalia, etc.). IDs sequenciais começando em 1.',
+        'Hierarquia': 'Respeite a hierarquia taxonômica: Domínio(1) → Reino(2) → Filo(3) → etc.',
+        'Especie': 'Use nomes científicos reais de espécies (ex: Homo sapiens, Canis lupus). IUCN: LC, NT, VU, EN, CR, EW, EX.',
+        'Especime': 'Descritivos como "Espécime adulto macho", "Jovem fêmea", "Esqueleto completo".',
+        'Local_de_Coleta': 'Use locais reais como "Floresta Amazônica", "Mata Atlântica", "Cerrado".',
+        'Amostra': 'Tipos: sangue, pele, osso, DNA, fezes, pelo, escama, etc.',
+        'Projeto': 'Nomes científicos realistas, status atual dos projetos.',
+        'Funcionario': 'Nomes brasileiros, CPFs válidos (11 dígitos), cargos: Pesquisador, Técnico, Bolsista, etc.',
+        'Laboratorio': 'Nomes como "Lab. de Genética", "Lab. de Taxonomia", endereços de universidades.',
+        'Financiador': 'Órgãos como CNPq, CAPES, FAPESP, universidades.',
+        'Equipamento': 'Microscópios, sequenciadores, centrífugas, etc.',
+        'Midia': 'ATENÇÃO: Use build_prompt_for_media_table() para esta tabela. Campo BLOB sempre null.'
+    }
+    
+    instrucao_tabela = instrucoes_especificas.get(tabela_alvo, 'Gere dados realistas e coerentes.')
+    
+    prompt = f"""
+    {contexto_banco}
+    
+    SCHEMA COMPLETO DO BANCO:
     {script}
     
-    Gere exatamente {n_linhas} linhas de dados realistas e coerentes para a tabela `{tabela_alvo}`.
+    TABELA ALVO: {tabela_alvo}
+    Campos da tabela:
+    {campos_str}
     
-    Sua resposta deve ser APENAS uma lista Python de tuplas, cada tupla representando uma linha de inserção. NÃO inclua explicações, comentários, descrições, texto extra, cabeçalhos ou rodapés.
+    INSTRUÇÕES ESPECÍFICAS:
+    {instrucao_tabela}
     
-    Formato EXATO da resposta:
-    [
-        (valor1, valor2, ...),
-        (valor1, valor2, ...),
-        ...
-    ]
+    TAREFA:
+    Gere exatamente {n_linhas} registros realistas para a tabela `{tabela_alvo}` considerando o contexto científico do laboratório de taxonomia.
     
-    A resposta deve ser apenas a lista acima, nada mais. Se retornar qualquer coisa além da lista, será considerado erro.
+    FORMATO DE RESPOSTA (OBRIGATÓRIO):
+    Retorne APENAS um objeto JSON válido no seguinte formato:
+    {{
+        "registros": [
+            {{"campo1": valor1, "campo2": valor2, ...}},
+            {{"campo1": valor1, "campo2": valor2, ...}},
+            ...
+        ]
+    }}
+    
+    REGRAS IMPORTANTES:
+    - Use valores apropriados para cada tipo de campo (int, varchar, date, decimal)
+    - Para campos de data, use formato 'YYYY-MM-DD'
+    - Para campos decimais, use números com até 2 casas decimais
+    - Para varchar, respeite os limites de caracteres
+    - Para campos BLOB, use null (dados binários não podem ser gerados em JSON)
+    - IDs devem ser sequenciais começando em 1
+    - Mantenha coerência entre dados relacionados
+    
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
     """
     return prompt.strip()
 
 
 def build_prompt_for_media_table(schema: dict, tabela_alvo: str, n_linhas=20):
     """
-    Gera um prompt específico para tabelas que contêm campos BLOB (como Midia).
-    Para campos BLOB, sugere usar None ou placeholder, pois a IA não pode gerar dados binários.
+    Gera um prompt específico para a tabela Midia (com campos BLOB).
+    Esta função garante que campos BLOB sejam sempre null no JSON,
+    evitando que a IA tente gerar dados binários aleatórios.
     """
     if tabela_alvo.lower() != 'midia':
         return build_prompt(schema, tabela_alvo, n_linhas)
     
-    campos_info = []
-    for col in schema[tabela_alvo]:
-        if 'blob' in col['tipo'].lower():
-            campos_info.append(f"- `{col['nome']}`: {col['tipo']} (use None - dados binários serão inseridos separadamente)")
-        else:
-            campos_info.append(f"- `{col['nome']}`: {col['tipo']}")
-    
-    campos_str = "\n".join(campos_info)
-    
     prompt = f"""
-    Gere exatamente {n_linhas} linhas de dados realistas para a tabela `{tabela_alvo}`:
+    CONTEXTO: Sistema de laboratório de taxonomia - Tabela de mídia para armazenar imagens/áudios de espécimes.
     
-    {campos_str}
+    IMPORTANTE: NÃO gere dados para o campo BLOB. Sempre use null.
     
-    IMPORTANTE: Para campos BLOB (Dado), use None pois não é possível gerar dados binários.
+    Gere {n_linhas} registros JSON para a tabela Midia:
+    - ID_Midia: integer (sequencial começando em 1)
+    - ID_Especime: integer (referência aos espécimes existentes, use valores 1-{min(10, n_linhas)})
+    - Tipo: varchar(50) (exemplos: "Fotografia dorsal", "Microscopia 40x", "Áudio de vocalização", "Imagem lateral", "Video comportamental")
+    - Dado: blob (SEMPRE null no JSON - as imagens serão inseridas separadamente)
     
-    Formato da resposta:
-    [
-        (valor1, valor2, None),
-        (valor1, valor2, None),
-        ...
-    ]
+    FORMATO DE RESPOSTA:
+    {{
+        "registros": [
+            {{"ID_Midia": 1, "ID_Especime": 1, "Tipo": "Fotografia lateral", "Dado": null}},
+            {{"ID_Midia": 2, "ID_Especime": 2, "Tipo": "Microscopia 100x", "Dado": null}},
+            ...
+        ]
+    }}
+    
+    REGRAS:
+    - Varie os tipos de mídia (fotografia, microscopia, áudio, vídeo)
+    - IDs sequenciais começando em 1
+    - Campo Dado sempre null
+    - ID_Especime deve referenciar espécimes existentes
+    
+    Responda SOMENTE com o JSON, sem explicações.
     """
     return prompt.strip()
+
+
+def insert_data_from_json(conexao, nome_tabela, json_dados):
+    """
+    Insere dados em uma tabela a partir de um JSON estruturado.
+    Parâmetros:
+        conexao: Conexão com o banco de dados.
+        nome_tabela (str): Nome da tabela.
+        json_dados (dict): Dados em formato JSON com chave "registros".
+    """
+    if "registros" not in json_dados:
+        raise ValueError("JSON deve conter a chave 'registros'")
+    
+    registros = json_dados["registros"]
+    if not registros:
+        print(f"Nenhum registro para inserir na tabela {nome_tabela}")
+        return
+    
+    # Pega os campos do primeiro registro
+    campos = list(registros[0].keys())
+    
+    cursor = conexao.cursor()
+    placeholders = ", ".join(["%s"] * len(campos))
+    campos_sql = ", ".join([f"`{c}`" for c in campos])
+    insert_query = f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
+    
+    sucessos = 0
+    erros = 0
+    
+    for registro in registros:
+        try:
+            # Converte os valores do registro para uma tupla na ordem correta
+            valores = tuple(registro[campo] for campo in campos)
+            cursor.execute(insert_query, valores)
+            sucessos += 1
+        except mysql.connector.Error as err:
+            print(f"Erro ao inserir registro {registro}: {err}")
+            erros += 1
+    
+    conexao.commit()
+    cursor.close()
+    
+    print(f"Tabela {nome_tabela}: {sucessos} inserções bem-sucedidas, {erros} erros")
+
+
+def populate_all_tables(conexao, n_linhas=10):
+    """
+    Popula todas as tabelas usando o novo formato JSON.
+    """
+    import json
+    
+    schema = get_schema_info(conexao)
+    ordem = ["Taxon", "Hierarquia", "Especie", "Especime", 
+            "Local_de_Coleta", "Amostra", "Midia", "Projeto", 
+            "Artigo", "Funcionario", "Proj_Func", "Proj_Esp", 
+            "Categoria", "Proj_Cat", "Laboratorio", "Contrato", 
+            "Financiador", "Financiamento", "Equipamento", 
+            "Registro_de_Uso"]
+    
+    cursor = conexao.cursor()
+    cursor.execute("SHOW TABLES")
+    tabelas = [linha[0] for linha in cursor.fetchall()]
+    cursor.close()
+    
+    # Filtra apenas tabelas que existem no banco
+    tabelas_ordenadas = [t for t in ordem if t in tabelas]
+
+    for tabela_nome in tabelas_ordenadas:
+        print(f"\nProcessando tabela: `{tabela_nome.upper()}`")
+        
+        try:
+            cursor = conexao.cursor()
+            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
+            total = cursor.fetchone()[0]
+            cursor.close()
+            
+            if total > 0:
+                print(f"Tabela `{tabela_nome.upper()}` já contém {total} registros. Pulando...")
+                continue
+
+            # TRATAMENTO ESPECIAL PARA TABELA MIDIA
+            if tabela_nome.lower() == 'midia':
+                print(f"  → Usando populate_midia_table() para buscar imagens reais...")
+                populate_midia_table(conexao)
+                continue
+
+            # GERAR DADOS VIA IA PARA OUTRAS TABELAS
+            # Escolhe o prompt adequado baseado na tabela
+            if tabela_nome.lower() == 'midia':
+                # Caso especial se não usar populate_midia_table
+                prompt = build_prompt_for_media_table(schema, tabela_nome, n_linhas)
+            else:
+                prompt = build_prompt(schema, tabela_nome, n_linhas)
+            
+            print(f"  → Gerando {n_linhas} registros via IA...")
+            resposta = generate_data(prompt)
+            
+            try:
+                # Parse do JSON
+                dados_json = json.loads(resposta)
+                insert_data_from_json(conexao, tabela_nome, dados_json)
+                print(f"✓ Tabela `{tabela_nome.upper()}` populada com sucesso")
+                
+            except json.JSONDecodeError as e:
+                print(f"Erro ao fazer parse do JSON para `{tabela_nome}`: {e}")
+                print(f"Resposta recebida: {resposta[:200]}...")
+                continue
+            except ValueError as e:
+                print(f"Erro nos dados para `{tabela_nome}`: {e}")
+                continue
+                
+        except (mysql.connector.Error, ValueError, json.JSONDecodeError) as e:
+            print(f"Erro ao processar `{tabela_nome}`: {e}")
+            continue
 
 
 def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
@@ -385,28 +565,16 @@ def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
 
 def insert_data(conexao, nome_tabela, campos, dados):
     """
-    Insere múltiplas linhas de dados em uma tabela específica do banco de dados.
-    Parâmetros:
-        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados.
-        nome_tabela (str): Nome da tabela onde os dados serão inseridos.
-        campos (list): Lista com os nomes das colunas da tabela.
-        dados (list of tuple): Lista de tuplas, onde cada tupla representa uma linha de valores a ser inserida.
+    Wrapper para insert_data_from_json - converte dados de tupla para JSON.
     """
-    
-    # Insere dados na tabela especificada
-    cursor = conexao.cursor()
-    placeholders = ", ".join(["%s"] * len(campos))
-    campos_sql = ", ".join([f"`{c}`" for c in campos])
-    insert_query = f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
+    # Converte lista de tuplas para formato JSON
+    registros = []
     for linha in dados:
-        try:
-            cursor.execute(insert_query, linha)
-        except mysql.connector.Error as err:
-            print(f"Erro ao inserir na tabela `{nome_tabela}`: {err}")
-            raise
-
-    conexao.commit()
-    cursor.close()
+        registro = {campo: valor for campo, valor in zip(campos, linha)}
+        registros.append(registro)
+    
+    json_dados = {"registros": registros}
+    return insert_data_from_json(conexao, nome_tabela, json_dados)
 
 
 def search_image_web(nome_especie, timeout=10):
@@ -579,119 +747,6 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
         cursor.close()
 
 
-def populate_media_table_with_placeholder_images(conexao, n_linhas=10):
-    """
-    Popula a tabela Midia com imagens placeholder simples (versão antiga).
-    """
-    # Criar uma imagem placeholder simples
-    placeholder_image = Image.new('RGB', (100, 100), color='lightgray')
-    img_buffer = io.BytesIO()
-    placeholder_image.save(img_buffer, format='JPEG')
-    placeholder_bytes = img_buffer.getvalue()
-    
-    cursor = conexao.cursor()
-    
-    # Verificar se há especimes disponíveis
-    cursor.execute("SELECT ID_Especime FROM Especime")
-    especimes = [row[0] for row in cursor.fetchall()]
-    
-    if not especimes:
-        print("Nenhum espécime encontrado. Crie espécimes primeiro.")
-        cursor.close()
-        return
-    
-    # Gerar dados para Midia
-    tipos_midia = ['Fotografia', 'Microscopia', 'Radiografia', 'Ultrassom']
-    
-    dados_midia = []
-    for i in range(n_linhas):
-        id_especime = random.choice(especimes)
-        tipo = random.choice(tipos_midia)
-        dados_midia.append((id_especime, tipo, placeholder_bytes))
-    
-    # Inserir na tabela
-    insert_query = "INSERT INTO Midia (ID_Especime, Tipo, Dado) VALUES (%s, %s, %s)"
-    for linha in dados_midia:
-        try:
-            cursor.execute(insert_query, linha)
-        except mysql.connector.Error as err:
-            print(f"Erro ao inserir mídia: {err}")
-    
-    conexao.commit()
-    cursor.close()
-    print(f"Tabela Midia populada com {n_linhas} registros e imagens placeholder.")
-    
-
-def populate_all_tables(conexao, n_linhas=10):
-    """
-    Popula todas as tabelas do banco de dados na ordem correta considerando dependências de chaves estrangeiras.
-    Primeiro, obtém o schema das tabelas e as dependências de chaves estrangeiras. Em seguida, realiza uma ordenação topológica para determinar a ordem de inserção dos dados, garantindo que tabelas dependentes sejam populadas após suas referências. Para cada tabela, verifica se já possui registros e, caso contrário, gera dados fictícios (sem as colunas de chave estrangeira) e insere na tabela. Ignora tabelas já populadas e trata erros de formatação dos dados gerados.
-    Parâmetros:
-        conexao: objeto de conexão com o banco de dados.
-        n_linhas (int): número de linhas a serem inseridas em cada tabela (padrão: 10).
-    """
-    
-    # Pega o schema e as dependências de chaves estrangeiras
-    schema = get_schema_info(conexao)
-    ordem = ["taxon", "hierarquia", "especie", "especime", 
-            "local_de_coleta", "amostra", "midia", "projeto", 
-            "artigo", "funcionario", "proj_func", "proj_esp", 
-            "categoria", "esp_cat", "laboratorio", "contrato", 
-            "financiador", "financiamento", "equipamento", 
-            "registro_de_uso"]
-    
-    cursor = conexao.cursor()
-    cursor.execute("SHOW TABLES")
-    tabelas = [linha[0] for linha in cursor.fetchall()]
-    cursor.close()
-    valores = [tabela for tabela in ordem if tabela in tabelas]
-
-    # Popular com força
-    for tabela_nome in valores:
-        print(f"\nTabela: `{tabela_nome.upper()}`")
-        try:
-            cursor = conexao.cursor()
-            cursor.execute(f"SELECT COUNT(*) FROM `{tabela_nome}`")
-            total = cursor.fetchone()[0]
-            cursor.close()
-            
-            if total > 0:
-                print(f"Tabela `{tabela_nome.upper()}` já contém {total} registros. Ignorando.")
-                continue
-
-            # Tratamento especial para tabela Midia (contém BLOB)
-            if tabela_nome.lower() == 'midia':
-                populate_midia_table(conexao)
-                continue
-
-            campos = [col["nome"] for col in schema[tabela_nome]]
-
-            prompt = build_prompt(
-                {t: schema[t] for t in [tabela_nome]},
-                tabela_nome,
-                n_linhas=n_linhas
-            )
-            resposta = generate_data(prompt)
-
-            try:
-                dados = ast.literal_eval(resposta)
-                if not isinstance(dados, list) or not all(isinstance(x, tuple) for x in dados):
-                    raise ValueError("Formato inválido: esperado lista de tuplas")
-            except ValueError as e:
-                print(f"Dados inválidos retornados pela IA para `{tabela_nome.upper()}` → {e}")
-                continue
-            
-            try:
-                insert_data(conexao, tabela_nome, campos, dados)
-            except mysql.connector.Error as e:
-                print(f"Erro ao inserir dados em `{tabela_nome.upper()}`: {e}")
-                return
-            print(f"Populada `{tabela_nome.upper()}` com sucesso.")
-            
-        except ValueError as e:
-            print(f"Erro ao processar `{tabela_nome.upper()}`: {e}")
-
-
 def insert_by_user(conexao):
     """
     Solicita ao usuário o nome da tabela, os campos e valores a serem inseridos, e realiza a operação.
@@ -734,7 +789,7 @@ def insert_by_user(conexao):
 
     # Solicita nome da tabela
     print("\n" + "="*50 + "\n")
-    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip().lower()
+    tabela_nome = input("Digite o nome da tabela para inserir dados: ").strip()
     
     if tabela_nome not in tabelas:
         print(f"Tabela `{tabela_nome.upper()}` não encontrada.")
@@ -783,51 +838,58 @@ def insert_by_user(conexao):
         
         if 'timestamp' in tipo_campo.lower():
             valor = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"• {campo} ({tipo_campo}): {valor} [AUTO-GERADO]")
         elif 'blob' in tipo_campo.lower():
-            valor = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
-            if valor.lower() == 'null' or valor == '':
-                valor = None
-            else:
-                try:
-                    with open(valor, 'rb') as f:
-                        valor = f.read()
-                except FileNotFoundError:
-                    print(f"Arquivo '{valor}' não encontrado. Usando valor None.")
-                    valor = None
-        else:
-            valor_input = input(f"• {campo} ({tipo_campo}): ").strip()
-        
-        if 'int' in tipo_campo.lower() and valor_input.isdigit():
-            valor = int(valor_input)
-        elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
-                try:
-                    valor = float(valor_input)
-                except ValueError:
-                    valor = valor_input
-        elif 'date' in tipo_campo.lower():
-                # Verifica se a data está no formato YYYY-MM-DD
-                if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
-                    valor = valor_input
-                elif valor_input.lower() == 'null' or valor_input == '':
-                    valor = None
-                else:
-                    print(f"Formato de data inválido para {campo}. Usando data atual.")
-                    valor = (datetime.now()).strftime('%Y-%m-%d')
-        elif 'varchar' in tipo_campo.lower():
-            # Extrai o tamanho máximo do varchar
-            match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
-            max_len = int(match.group(1)) if match else None
-            if len(valor_input) > max_len:
-                print(f"Valor para {campo} excede o tamanho máximo de {max_len} caracteres. Truncando.")
-                valor = valor_input[:max_len]
-            else:
-                valor = valor_input
-        else:
-            # Para outros tipos, aceita o valor como string
+            valor_input = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
             if valor_input.lower() == 'null' or valor_input == '':
                 valor = None
             else:
+                try:
+                    with open(valor_input, 'rb') as f:
+                        valor = f.read()
+                except FileNotFoundError:
+                    print(f"Arquivo '{valor_input}' não encontrado. Usando valor None.")
+                    valor = None
+        else:
+            valor_input = input(f"• {campo} ({tipo_campo}): ").strip()
+            
+            # CORRIGINDO: processamento do valor baseado no tipo
+            if valor_input.lower() == 'null' or valor_input == '':
+                valor = None
+            elif 'int' in tipo_campo.lower():
+                try:
+                    valor = int(valor_input)
+                except ValueError:
+                    print(f"Valor inválido para {campo}. Usando 0.")
+                    valor = 0
+            elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
+                try:
+                    valor = float(valor_input)
+                except ValueError:
+                    print(f"Valor inválido para {campo}. Usando 0.0.")
+                    valor = 0.0
+            elif 'date' in tipo_campo.lower():
+                # Verifica se a data está no formato YYYY-MM-DD
+                if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
+                    valor = valor_input
+                else:
+                    print(f"Formato de data inválido para {campo}. Usando data atual.")
+                    valor = (datetime.now()).strftime('%Y-%m-%d')
+            elif 'varchar' in tipo_campo.lower():
+                # Extrai o tamanho máximo do varchar
+                match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
+                if match:
+                    max_len = int(match.group(1))
+                    if len(valor_input) > max_len:
+                        print(f"Valor para {campo} excede o tamanho máximo de {max_len} caracteres. Truncando.")
+                        valor = valor_input[:max_len]
+                    else:
+                        valor = valor_input
+                else:
+                    valor = valor_input
+            else:
                 valor = valor_input
+        
         valores.append(valor)
 
     # Confirma inserção
@@ -1100,13 +1162,12 @@ def make_query(conexao, sql_query):
         conexao: Objeto de conexão com o banco de dados.
         sql_query (str): Consulta SQL a ser executada.
     """
+    cursor = conexao.cursor()
     
     try:
-        cursor = conexao.cursor()
         cursor.execute(sql_query)
         resultados = cursor.fetchall()
         colunas = [desc[0] for desc in cursor.description]
-        cursor.close()
 
         if resultados:
             print(f"Resultados da query '{sql_query}':")
@@ -1116,8 +1177,8 @@ def make_query(conexao, sql_query):
             print("Nenhum resultado encontrado.")
     except mysql.connector.Error as err:
         print(f"Erro ao executar a query: {err}")
-        
-    cursor.close()
+    finally:
+        cursor.close()
 
 
 def generate_embeddings(img_bytes):
@@ -1241,17 +1302,13 @@ def exit_db(conexao):
 def crud(conexao):
     # Exemplo de CRUD completo usando as funções já implementadas
     
-    # 1. Criar todas as tabelas
-    print("\n[CRUD] Criando todas as tabelas a partir de 'script.sql'...")
-    create_tables("script.sql", conexao)
-
     # 1. Deletar todas as tabelas (limpa o banco)
     print("\n[CRUD] Deletando todas as tabelas...")
     drop_tables(conexao)
 
     # 2. Criar todas as tabelas a partir do arquivo script.sql
     print("\n[CRUD] Criando tabelas a partir de 'script.sql'...")
-    create_tables("script.sql", conexao)
+    create_tables(conexao)
 
     # 3. Popular todas as tabelas automaticamente com dados gerados por IA
     print("\n[CRUD] Populando tabelas automaticamente...")
@@ -1269,22 +1326,16 @@ def crud(conexao):
             print(linha)
         cursor.close()
 
-    # 5. Atualizar algumas linhas aleatórias de uma tabela (exemplo: primeira tabela)
-    tabela_exemplo = next(iter(schema))
-    print(f"\n[CRUD] Atualizando 3 linhas aleatórias da tabela '{tabela_exemplo}'...")
-    update_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=3)
+    
+    if schema:
+        # 5. Atualizar algumas linhas aleatórias de uma tabela
+        tabela_exemplo = next(iter(schema))
+        print(f"\n[CRUD] Atualizando 3 linhas aleatórias da tabela '{tabela_exemplo}'...")
+        update_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=3)
 
-    # 6. Deletar algumas linhas aleatórias da mesma tabela
-    print(f"\n[CRUD] Deletando 2 linhas aleatórias da tabela '{tabela_exemplo}'...")
-    delete_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=2)
-
-    # 7. Atualização manual (exemplo)
-    print(f"\n[CRUD] Atualização manual na tabela '{tabela_exemplo}' (exemplo)...")
-    # update_by_user(conexao) 
-
-    # 8. Deleção manual (exemplo)
-    print(f"\n[CRUD] Deleção manual na tabela '{tabela_exemplo}' (exemplo)...")
-    # delete_by_user(conexao)  
+        # 6. Deletar algumas linhas aleatórias da mesma tabela
+        print(f"\n[CRUD] Deletando 2 linhas aleatórias da tabela '{tabela_exemplo}'...")
+        delete_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=2)
 
     print("\n[CRUD] CRUD automatizado finalizado.")
 
@@ -1299,34 +1350,32 @@ if __name__ == "__main__":
 
         while True:
             print("""
-╔═════════════════════════════════════════════╗
-║             NEXUS-BIO CMD v1.4              ║
-║---------------------------------------------║
-║ [  1 ] > Criar Tabelas                      ║
-║ [  2 ] > Apagar Tabelas                     ║
-║ [  3 ] > Visualizar Tabelas                 ║
-║ [  4 ] > Inserir Dados Manualmente          ║
-║ [  5 ] > Atualizar Dados Manualmente        ║
-║ [  6 ] > Deletar Dados Manualmente          ║
-║ [  7 ] > IA: Preencher Tabelas              ║
-║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
-║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
-║ [ 10 ] > IA: Buscar Imagens Similares       ║
-║ [ 11 ] > Executar CRUD Automático           ║
-║ [ 12 ] > Remover Dados Aleatórios           ║
-║ [  0 ] > Explodir Sistema                   ║
-╚═════════════════════════════════════════════╝
+                ╔═════════════════════════════════════════════╗
+                ║             NEXUS-BIO CMD v1.4              ║
+                ║---------------------------------------------║
+                ║ [  1 ] > Criar Tabelas                      ║
+                ║ [  2 ] > Apagar Tabelas                     ║
+                ║ [  3 ] > Visualizar Tabelas                 ║
+                ║ [  4 ] > Inserir Dados Manualmente          ║
+                ║ [  5 ] > Atualizar Dados Manualmente        ║
+                ║ [  6 ] > Deletar Dados Manualmente          ║
+                ║ [  7 ] > IA: Preencher Tabelas              ║
+                ║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
+                ║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
+                ║ [ 10 ] > IA: Buscar Imagens Similares       ║
+                ║ [ 11 ] > Executar CRUD Automático           ║
+                ║ [ 12 ] > Remover Dados Aleatórios           ║
+                ║ [  0 ] > Explodir Sistema                   ║
+                ╚═════════════════════════════════════════════╝
             """)
 
             try:
                 opcao = int(input("Opção: ").strip())
-                if opcao < -1 or opcao > 11:
-                    print("Opção inválida. Escolha um número válido")
+                if opcao < 0 or opcao > 12:
+                    print("Opção inválida. Escolha um número entre 0 e 12.")
+                    continue
             except ValueError:
                 print("Entrada inválida. Por favor, digite um número.")
-                opcao = None
-
-            if opcao is None or opcao < -1 or opcao > 11:
                 continue
 
             match opcao:
@@ -1366,11 +1415,12 @@ if __name__ == "__main__":
                     update_random_rows(con, tabela_nome=tabela, n_linhas=n)
 
                 case 9:
-                    prompt_usuario = input("Digite sua consulta SQL: ").strip()
-                    db_schema = get_schema_info(con)
-                    query = generate_sql_query(prompt_usuario, db_schema)
-                    print(f"Query gerada: {query}")
-                    make_query(con, query)
+                    prompt_usuario = input("Digite sua consulta em linguagem natural: ").strip()
+                    if prompt_usuario:
+                        db_schema = get_schema_info(con)
+                        query = generate_sql_query(prompt_usuario, db_schema)
+                        print(f"Query gerada: {query}")
+                        make_query(con, query)
                 
                 case 10:
                     caminho_imagem = input("Caminho da imagem para busca: ").strip()
@@ -1398,3 +1448,17 @@ if __name__ == "__main__":
 
     except mysql.connector.Error as err:
         print("Erro na conexão com o banco de dados!", err)
+    except KeyboardInterrupt:
+        print("\n\nPrograma interrompido pelo usuário.")
+    except FileNotFoundError as fnf_err:
+        print(f"Erro de arquivo não encontrado: {fnf_err}")
+    except ValueError as val_err:
+        print(f"Erro de valor: {val_err}")
+    except OSError as os_err:
+        print(f"Erro do sistema operacional: {os_err}")
+    except (RuntimeError, AttributeError, TypeError) as e:
+            print(f"Erro inesperado: {e}")
+    finally:
+            if 'con' in locals() and con.is_connected():
+                exit_db(con)
+    
