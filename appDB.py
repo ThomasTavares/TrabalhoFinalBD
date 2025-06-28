@@ -388,6 +388,10 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     - Mantenha coerência entre dados relacionados
     
     Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
     """
     return prompt.strip()
 
@@ -692,6 +696,12 @@ def populate_taxon_table(conexao):
             {"ID_Tax": 7, "Tipo": "Gênero", "Nome": "Homo"}
         ]
     }
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
     """
     print("  → Gerando taxonomia completa via IA...")
     resposta = generate_data(prompt)
