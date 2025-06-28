@@ -952,35 +952,49 @@ def validate_structure(registros, schema_colunas):
 
 def populate_taxon_table(conexao):
     """
-    Versão melhorada para popular a tabela Taxon.
+    Versão corrigida para popular a tabela Taxon respeitando o CHECK constraint.
     """
     try:
         print("Gerando taxonomia completa via IA...")
         
         prompt = """
-        Gere uma taxonomia completa para espécies de laboratório. Inclua exatamente 25 entradas cobrindo:
+        Gere uma taxonomia completa para espécies de laboratório. 
         
-        1. Domínio: Eukaryota
-        2. Reinos: Animalia, Plantae, Fungi
-        3. Filos: Chordata, Arthropoda, Mollusca, Magnoliophyta
-        4. Classes: Mammalia, Aves, Insecta, Gastropoda
-        5. Ordens: Primates, Carnivora, Diptera, Lepidoptera  
-        6. Famílias: Hominidae, Felidae, Drosophilidae, Nymphalidae
-        7. Gêneros: Homo, Panthera, Drosophila, Danaus
+        IMPORTANTE: Use EXATAMENTE estes tipos (respeitando acentos):
+        - Domínio
+        - Reino  
+        - Filo
+        - Classe
+        - Ordem
+        - Família
+        - Gênero
+        
+        NÃO use "Espécie" - apenas os 7 tipos acima.
+        
+        Exemplos de nomes para cada tipo:
+        - Domínio: Eukaryota, Bacteria, Archaea
+        - Reino: Animalia, Plantae, Fungi, Protista
+        - Filo: Chordata, Arthropoda, Mollusca, Cnidaria
+        - Classe: Mammalia, Aves, Reptilia, Amphibia, Actinopterygii
+        - Ordem: Primates, Carnivora, Rodentia, Chiroptera
+        - Família: Hominidae, Felidae, Canidae, Muridae
+        - Gênero: Homo, Panthera, Canis, Mus, Drosophila
 
-        FORMATO DE RESPOSTA OBRIGATÓRIO - SOMENTE JSON:
+        FORMATO DE RESPOSTA:
         {
             "registros": [
                 {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
                 {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
-                {"ID_Tax": 3, "Tipo": "Reino", "Nome": "Plantae"}
+                {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"}
             ]
         }
         
-        Use IDs sequenciais de 1 a 25. Responda APENAS com o JSON válido.
+        Gere cerca de 250 registros cobrindo todos os tipos taxonômicos.
+        Use IDs sequenciais de 1 a 250.
+        Responda APENAS com o JSON válido.
         """
         
-        resposta = generate_data(prompt, temperatura=0.2)  # Baixa temperatura para mais consistência
+        resposta = generate_data(prompt, temperatura=0.1)  # Temperatura muito baixa para consistência
         resposta_limpa = clean_json_response(resposta)
         
         if not resposta_limpa.strip():
@@ -998,8 +1012,17 @@ def populate_taxon_table(conexao):
         sucessos = 0
         erros = 0
         
+        # Valida cada registro antes de inserir
+        tipos_validos = {'Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'}
+        
         for registro in registros:
             try:
+                tipo = registro["Tipo"]
+                if tipo not in tipos_validos:
+                    print(f"Tipo inválido ignorado: {tipo}")
+                    erros += 1
+                    continue
+                    
                 query = "INSERT INTO Taxon (ID_Tax, Tipo, Nome) VALUES (%s, %s, %s)"
                 valores = (registro["ID_Tax"], registro["Tipo"], registro["Nome"])
                 cursor.execute(query, valores)
@@ -1014,7 +1037,7 @@ def populate_taxon_table(conexao):
         print(f"Taxon: {sucessos} sucessos, {erros} erros")
         return sucessos > 0
         
-    except (json.JSONDecodeError, mysql.connector.Error, Exception) as e:
+    except (json.JSONDecodeError, mysql.connector.Error, ValueError, KeyError) as e:
         print(f"Erro crítico ao popular Taxon: {e}")
         return False
 
@@ -1450,7 +1473,7 @@ def delete_by_user(conexao):
 
 def generate_sql_query(user_prompt, schema, modelo="gpt-4o-mini", temperatura=0.3):
     """
-    Gera uma query SQL baseada em um pedido do usuário.
+    Gera uma query SQL baseada em um pedido do usuário e retorna como uma string.
     """
     # Identifica tabelas mencionadas
     texto = user_prompt.lower()
