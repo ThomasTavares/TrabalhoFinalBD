@@ -481,12 +481,12 @@ def populate_all_tables(conexao, n_linhas=10):
     """
 
     schema = get_schema_info(conexao)
-    ordem = ["Taxon", "Hierarquia", "Especie", "Especime", 
-            "Local_de_Coleta", "Amostra", "Midia", "Projeto", 
-            "Artigo", "Funcionario", "Proj_Func", "Proj_Esp", 
-            "Categoria", "Proj_Cat", "Laboratorio", "Contrato", 
-            "Financiador", "Financiamento", "Equipamento", 
-            "Registro_de_Uso"]
+    ordem = ["taxon", "hierarquia", "especie", "especime", 
+            "local_de_coleta", "amostra", "midia", "projeto", 
+            "artigo", "funcionario", "proj_func", "proj_esp", 
+            "categoria", "proj_cat", "laboratorio", "contrato", 
+            "financiador", "financiamento", "equipamento", 
+            "registro_de_uso"]
     
     cursor = conexao.cursor()
     cursor.execute("SHOW TABLES")
@@ -665,8 +665,8 @@ def populate_taxon_table(conexao):
     Popula a tabela Taxon com a taxonomia completa para as espécies.
     """
     schema = get_schema_info(conexao)
-    if 'Taxon' not in schema:
-        print("Tabela `Taxon` não encontrada no banco de dados.")
+    if 'taxon' not in schema:
+        print("Tabela `TAXON` não encontrada no banco de dados.")
         return
 
     # Gera o prompt para preencher toda a taxonomia
