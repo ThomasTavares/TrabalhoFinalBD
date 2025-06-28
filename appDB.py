@@ -331,7 +331,7 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas: int, contexto_dados: 
     contexto_banco = """
     CONTEXTO DO BANCO DE DADOS:
     Este é um sistema de gerenciamento para um laboratório de taxonomia que lida com:
-    - Classificação taxonômica de espécies (Domínio → Reino → Filo → Classe → Ordem → Família → Gênero → Espécie)
+    - Classificação taxonômica de espécies (Dominio → Reino → Filo → Classe → Ordem → Familia → Genero → Especie)
     - Espécimes e amostras biológicas coletadas
     - Projetos de pesquisa científica e artigos publicados
     - Funcionários, laboratórios e equipamentos
@@ -375,7 +375,7 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas: int, contexto_dados: 
     
     # Instruções específicas por tabela
     instrucoes_especificas = {
-        'hierarquia': 'Crie relações hierárquicas válidas: Domínio → Reino → Filo → Classe → Ordem → Família → Gênero. Use os IDs dos táxons já existentes.',
+        'hierarquia': 'Crie relações hierárquicas válidas: Dominio → Reino → Filo → Classe → Ordem → Familia → Genero. Use os IDs dos táxons já existentes.',
         'especie': 'Use gêneros já cadastrados. Nomes científicos reais (binomial). IUCN válidos: LC, NT, VU, EN, CR, EW, EX.',
         'especime': 'Referencie espécies já cadastradas. Descritivos realistas como "Espécime adulto macho", "Jovem fêmea".',
         'amostra': 'Use espécies e locais já cadastrados. Tipos: sangue, pele, osso, DNA, fezes, pelo, escama.',
@@ -1283,32 +1283,32 @@ def populate_taxon_table(conexao, n_especies=250):
             Tipo varchar(10) NOT NULL,
             Nome varchar(50) NOT NULL,
             UNIQUE (Tipo, Nome),
-        CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'))); 
+        CHECK (Tipo IN ('Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero'))); 
         
-        IMPORTANTE: Use EXATAMENTE estes tipos (respeitando acentos):
-        - Domínio
+        IMPORTANTE: Use EXATAMENTE estes tipos (respeitando a falta de acentos):
+        - Dominio
         - Reino  
         - Filo
         - Classe
         - Ordem
-        - Família
-        - Gênero
+        - Familia
+        - Genero
         
         NÃO use "Espécie" - apenas os 7 tipos acima.
         
         Exemplos de nomes para cada tipo:
-        - Domínio: Eukaryota, Bacteria, Archaea
+        - Dominio: Eukaryota, Bacteria, Archaea
         - Reino: Animalia, Plantae, Fungi, Protista
         - Filo: Chordata, Arthropoda, Mollusca, Cnidaria
         - Classe: Mammalia, Aves, Reptilia, Amphibia, Actinopterygii
         - Ordem: Primates, Carnivora, Rodentia, Chiroptera
-        - Família: Hominidae, Felidae, Canidae, Muridae
-        - Gênero: Homo, Panthera, Canis, Mus, Drosophila
+        - Familia: Hominidae, Felidae, Canidae, Muridae
+        - Genero: Homo, Panthera, Canis, Mus, Drosophila
 
         FORMATO DE RESPOSTA:
         {
             "registros": [
-                {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
+                {"ID_Tax": 1, "Tipo": "Dominio", "Nome": "Eukaryota"},
                 {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
                 {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"}
             ]
@@ -1338,7 +1338,7 @@ def populate_taxon_table(conexao, n_especies=250):
         erros = 0
         
         # Valida cada registro antes de inserir
-        tipos_validos = {'Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'}
+        tipos_validos = {'Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero'}
         
         for registro in registros:
             try:
@@ -1462,7 +1462,7 @@ def format_check(resultado, campo=None):
         valores = match.group(2)
         
         valores_formatados = re.findall(r"'([^']+)'", valores)
-        print(f"Valores permitidos para '{atributo}': {', '.join(valores_formatados)}")
+        print(f"\nValores permitidos para '{atributo}': {', '.join(valores_formatados)}")
 
 
 def check_ckeck(conexao, tabela, campo=None):
@@ -1481,7 +1481,6 @@ def check_ckeck(conexao, tabela, campo=None):
     cursor.execute(f"SELECT cc.CONSTRAINT_NAME, cc.CHECK_CLAUSE FROM information_schema.check_constraints cc JOIN information_schema.table_constraints tc ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME WHERE tc.TABLE_NAME = '{tabela}' AND tc.TABLE_SCHEMA = 'trabalho_final' AND tc.CONSTRAINT_TYPE = 'CHECK';")
     resultados = cursor.fetchall()
     
-    print("\n")
     if campo:
         for resultado in resultados:
             format_check(resultado, campo)
@@ -1644,7 +1643,7 @@ def insert_by_user(conexao):
         insert_data(conexao, tabela_nome, colunas, [tuple(valores)])
         print("Dados inseridos com sucesso!")
     except (mysql.connector.Error, ValueError) as e:
-        print(f"Erro ao inserir dados: {e}")
+        print(f"Inserção falhou.")
     finally:
         cursor.close()
     print("\n" + "="*50)
