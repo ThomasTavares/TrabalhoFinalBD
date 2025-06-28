@@ -2,6 +2,7 @@ CREATE TABLE Taxon (
 	ID_Tax integer PRIMARY KEY,
 	Tipo varchar(10) NOT NULL,
 	Nome varchar(50) NOT NULL,
+	UNIQUE (Tipo, Nome),
 	CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero')));
 
 CREATE TABLE Hierarquia (
@@ -15,9 +16,10 @@ CREATE TABLE Especie (
 	ID_Gen integer NOT NULL,
 	Nome varchar(50) NOT NULL,
 	Nome_Pop varchar(50),
-	Descricao varchar(2500),
+	Descricao varchar(500),
 	IUCN varchar(2),
-	FOREIGN KEY(ID_Gen) REFERENCES Taxon (ID_Tax));
+	FOREIGN KEY(ID_Gen) REFERENCES Taxon (ID_Tax),
+	CHECK (IUCN IN ('LC', 'NT', 'VU', 'EN', 'CR', 'EW', 'EX')));
 
 CREATE TABLE Especime (
 	ID_Especime integer PRIMARY KEY,
@@ -40,7 +42,7 @@ CREATE TABLE Amostra (
 	FOREIGN KEY(ID_Local) REFERENCES Local_de_Coleta (ID_Local));
 
 CREATE TABLE Midia (
-	ID_Midia integer PRIMARY KEY,
+	ID_Midia integer PRIMARY KEY AUTO_INCREMENT,
 	ID_Especime integer NOT NULL,
 	Tipo varchar(50) NOT NULL,
 	Dado blob,	-- BLOB = Binary Large Object

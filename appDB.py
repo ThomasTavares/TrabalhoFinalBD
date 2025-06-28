@@ -61,7 +61,7 @@ def connect_mysql(host="localhost", user="root", password="", database=None, por
     """
     try:
         cnx = mysql.connector.connect(
-            host=host, user=user, password=password, database=database, port=port
+            host=host, user=user, password=password, database=database, port=port, charset='utf8mb4', use_unicode=True
         )
 
         if cnx is not None and cnx.is_connected():
@@ -1118,15 +1118,16 @@ def truncate_value(value, max_length):
     return value
 
 
-def check_ckeck(conexao, tabela):
+def check_ckeck(conexao, tabela, campo=None):
     '''
     Verifica se a tabela possui CHECK constraints
     Parâmetros:
         conexao: Objeto de conexão com o banco de dados MySQL.
     Retorna:
-        list: Lista de tuplas contendo o nome da constraint e a cláusula CHECK. Se não houver constraints, retorna uma lista vazia.
+        None.
     '''
     cursor = conexao.cursor()
+
     
     query = """
     SELECT cc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
@@ -1138,12 +1139,79 @@ def check_ckeck(conexao, tabela):
     cursor.execute(query, (tabela, conexao.database))
     resultado = cursor.fetchall()
     
-    if resultado:
+    if resultado and campo:
+        valores = [r for r in resultado if campo.lower() in r[0].lower()]
+        if valores:
+            print(f"Valores permitidos para {campo}: ")
+    elif resultado and not campo:
         for constraint in resultado:
             print(f"Valores permitidos para {constraint[0]}: {constraint[1]}")
     cursor.close()
+
+
+def check_type(campo, tipo_campo):
+    """
+    Verifica se o valor de entrada é compatível com o tipo do campo.
+    Parâmetros:
+        tipo_campo (str): Tipo do campo.
+    Retorna:
+        valor (int, float, str, None): Valor convertido para o tipo correto ou None se inválido.
+    """
+    if 'timestamp' in tipo_campo.lower():
+            valor = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"• {campo} ({tipo_campo}): {valor} [AUTO-GERADO]")
+    elif 'blob' in tipo_campo.lower():
+        valor_input = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
+        if valor_input.lower() == 'null' or valor_input == '':
+            valor = None
+        else:
+            try:
+                with open(valor_input, 'rb') as f:
+                    valor = f.read()
+            except FileNotFoundError:
+                print(f"Arquivo '{valor_input}' não encontrado. Usando valor None.")
+                valor = None
+    else:
+        valor_input = input(f"• {campo} ({tipo_campo}): ").strip()
+        
+        # CORRIGINDO: processamento do valor baseado no tipo
+        if valor_input.lower() == 'null' or valor_input == '':
+            valor = None
+        elif 'int' in tipo_campo.lower():
+            try:
+                valor = int(valor_input)
+            except ValueError:
+                print(f"Valor inválido para {campo}. Usando 0.")
+                valor = 0
+        elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
+            try:
+                valor = float(valor_input)
+            except ValueError:
+                print(f"Valor inválido para {campo}. Usando 0.0.")
+                valor = 0.0
+        elif 'date' in tipo_campo.lower():
+            # Verifica se a data está no formato YYYY-MM-DD
+            if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
+                valor = valor_input
+            else:
+                print(f"Formato de data inválido para {campo}. Usando data atual.")
+                valor = (datetime.now()).strftime('%Y-%m-%d')
+        elif 'varchar' in tipo_campo.lower():
+            # Extrai o tamanho máximo do varchar
+            match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
+            if match:
+                max_len = int(match.group(1))
+                if len(valor_input) > max_len:
+                    print(f"Valor para {campo} excede o tamanho máximo de {max_len} caracteres. Truncando.")
+                    valor = valor_input[:max_len]
+                else:
+                    valor = valor_input
+            else:
+                valor = valor_input
+        else:
+            valor = valor_input
     
-    return resultado
+    return valor
 
 
 def insert_by_user(conexao):
@@ -1195,6 +1263,9 @@ def insert_by_user(conexao):
         status_str = f" [{', '.join(status)}]" if status else ""
         print(f"\t• {nome_col}: {tipo_col}{status_str}")
     
+    print("\n")
+    check_ckeck(conexao, tabela_nome)
+    
     # Exibe valores já registrados na tabela
     print("\nValores registrados:")
     show_table(conexao, tabela_nome)
@@ -1207,60 +1278,10 @@ def insert_by_user(conexao):
         campo_info = next((col for col in colunas_detalhadas if col[0] == campo), None)
         tipo_campo = campo_info[1] if campo_info else "unknown"
         
-        if 'timestamp' in tipo_campo.lower():
-            valor = (datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"• {campo} ({tipo_campo}): {valor} [AUTO-GERADO]")
-        elif 'blob' in tipo_campo.lower():
-            valor_input = input(f"• {campo} ({tipo_campo}). Digite o caminho do arquivo: ").strip()
-            if valor_input.lower() == 'null' or valor_input == '':
-                valor = None
-            else:
-                try:
-                    with open(valor_input, 'rb') as f:
-                        valor = f.read()
-                except FileNotFoundError:
-                    print(f"Arquivo '{valor_input}' não encontrado. Usando valor None.")
-                    valor = None
-        else:
-            valor_input = input(f"• {campo} ({tipo_campo}): ").strip()
-            
-            # CORRIGINDO: processamento do valor baseado no tipo
-            if valor_input.lower() == 'null' or valor_input == '':
-                valor = None
-            elif 'int' in tipo_campo.lower():
-                try:
-                    valor = int(valor_input)
-                except ValueError:
-                    print(f"Valor inválido para {campo}. Usando 0.")
-                    valor = 0
-            elif 'decimal' in tipo_campo.lower() or 'float' in tipo_campo.lower():
-                try:
-                    valor = float(valor_input)
-                except ValueError:
-                    print(f"Valor inválido para {campo}. Usando 0.0.")
-                    valor = 0.0
-            elif 'date' in tipo_campo.lower():
-                # Verifica se a data está no formato YYYY-MM-DD
-                if re.match(r'^\d{4}-\d{2}-\d{2}$', valor_input):
-                    valor = valor_input
-                else:
-                    print(f"Formato de data inválido para {campo}. Usando data atual.")
-                    valor = (datetime.now()).strftime('%Y-%m-%d')
-            elif 'varchar' in tipo_campo.lower():
-                # Extrai o tamanho máximo do varchar
-                match = re.search(r'varchar\((\d+)\)', tipo_campo.lower())
-                if match:
-                    max_len = int(match.group(1))
-                    if len(valor_input) > max_len:
-                        print(f"Valor para {campo} excede o tamanho máximo de {max_len} caracteres. Truncando.")
-                        valor = valor_input[:max_len]
-                    else:
-                        valor = valor_input
-                else:
-                    valor = valor_input
-            else:
-                valor = valor_input
+        # Solicita valor do usuário
+        valor = check_type(campo, tipo_campo)
         
+        # Insere o valor na lista
         valores.append(valor)
 
     # Confirma inserção
@@ -1422,14 +1443,23 @@ def update_by_user(conexao):
     
     print("\nValores registrados:")
     num_linhas = show_table(conexao, tabela_nome)
-    cursor.close()
     
     if num_linhas == 0:
         return
 
     campo = input("\nCampo a atualizar: ").strip()
-    valor = input("Novo valor: ").strip()
-    condicao = input("Insira a condição WHERE (ex: id = 1): ").strip()
+    
+    print("\n")
+    check_ckeck(conexao, tabela_nome, campo)
+    
+    cursor.execute(f"DESCRIBE `{tabela_nome}`")
+    colunas_detalhadas = cursor.fetchall()
+    tipo_campo = colunas_detalhadas[0][1] if campo in [col[0] for col in colunas_detalhadas] else None
+    cursor.close()
+    
+    print("\nNovo valor:")
+    valor = check_type(campo, tipo_campo)
+    condicao = input("\nInsira a condição WHERE (ex: id = 1): ").strip()
 
     query = f"UPDATE `{tabela_nome}` SET `{campo}` = %s WHERE {condicao}"
     try:
@@ -1761,24 +1791,24 @@ if __name__ == "__main__":
 
         while True:
             print("""
-                ╔═════════════════════════════════════════════╗
-                ║             NEXUS-BIO CMD v1.4              ║
-                ║---------------------------------------------║
-                ║ [  1 ] > Criar Tabelas                      ║
-                ║ [  2 ] > Apagar Tabelas                     ║
-                ║ [  3 ] > Visualizar Tabelas                 ║
-                ║ [  4 ] > Inserir Dados Manualmente          ║
-                ║ [  5 ] > Atualizar Dados Manualmente        ║
-                ║ [  6 ] > Deletar Dados Manualmente          ║
-                ║ [  7 ] > IA: Preencher Tabelas              ║
-                ║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
-                ║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
-                ║ [ 10 ] > IA: Buscar Imagens Similares       ║
-                ║ [ 11 ] > Executar CRUD Automático           ║
-                ║ [ 12 ] > Remover Dados Aleatórios           ║
-                ║ [  0 ] > Explodir Sistema                   ║
-                ╚═════════════════════════════════════════════╝
-            """)
+╔═════════════════════════════════════════════╗
+║             NEXUS-BIO CMD v1.4              ║
+║---------------------------------------------║
+║ [  1 ] > Criar Tabelas                      ║
+║ [  2 ] > Apagar Tabelas                     ║
+║ [  3 ] > Visualizar Tabelas                 ║
+║ [  4 ] > Inserir Dados Manualmente          ║
+║ [  5 ] > Atualizar Dados Manualmente        ║
+║ [  6 ] > Deletar Dados Manualmente          ║
+║ [  7 ] > IA: Preencher Tabelas              ║
+║ [  8 ] > IA: Atualizar Dados Aleatórios     ║
+║ [  9 ] > IA: Gerar SQL a partir de Texto    ║
+║ [ 10 ] > IA: Buscar Imagens Similares       ║
+║ [ 11 ] > Executar CRUD Automático           ║
+║ [ 12 ] > Remover Dados Aleatórios           ║
+║ [  0 ] > Explodir Sistema                   ║
+╚═════════════════════════════════════════════╝
+""")
 
             try:
                 opcao = int(input("Opção: ").strip())
