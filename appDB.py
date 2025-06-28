@@ -320,15 +320,14 @@ def generate_data(prompt, modelo="gpt-4o-mini", temperatura=0.4):
     return response.choices[0].message.content
 
 
-def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
+def build_prompt(schema: dict, tabela_alvo: str, n_linhas: int, contexto_dados: dict, foreign_keys_data: dict):
     """
-    Gera um prompt para criação de dados fictícios para uma tabela específica de um schema.
-    NOTA: Para tabela Midia, use build_prompt_for_media_table() para tratamento especial de BLOB.
+    Constrói um prompt mais inteligente usando dados das tabelas já populadas como contexto.
     """
     with open("script.sql", "r", encoding="utf-8") as f:
         script = f.read()
     
-    # Monta informações detalhadas sobre o contexto do banco
+    # Contexto geral do banco
     contexto_banco = """
     CONTEXTO DO BANCO DE DADOS:
     Este é um sistema de gerenciamento para um laboratório de taxonomia que lida com:
@@ -340,12 +339,11 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     - Mídia (imagens, áudios) dos espécimes
     """
     
-    # Informações específicas sobre a tabela alvo
+    # Informações sobre a tabela atual
     if tabela_alvo in schema:
         campos_info = []
         for col in schema[tabela_alvo]:
             tipo_col = col['tipo']
-            # Tratamento especial para campos BLOB
             if 'blob' in tipo_col.lower():
                 campos_info.append(f"- {col['nome']}: {tipo_col} (sempre null no JSON)")
             else:
@@ -354,20 +352,40 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     else:
         campos_str = "Tabela não encontrada no schema"
     
-    # Instruções específicas por tabela para dados mais realistas
+    # Monta contexto com dados das tabelas já populadas
+    contexto_existente = ""
+    if contexto_dados:
+        contexto_existente = "\n\nDADOS JÁ EXISTENTES NO BANCO (use como referência):\n"
+        for tabela, registros in contexto_dados.items():
+            contexto_existente += f"\n{tabela.upper()}:\n"
+            for i, registro in enumerate(registros[:3]):  # Mostra apenas 3 exemplos
+                contexto_existente += f"  Exemplo {i+1}: {registro}\n"
+    
+    # Monta informações sobre chaves estrangeiras disponíveis
+    fk_info = ""
+    if foreign_keys_data:
+        fk_info = "\n\nCHAVES ESTRANGEIRAS DISPONÍVEIS (use APENAS estes valores):\n"
+        for campo, valores in foreign_keys_data.items():
+            fk_info += f"\n{campo}:\n"
+            for valor in valores[:10]:  # Mostra apenas 10 opções
+                if len(valor) >= 2:  # Tem ID e nome/descrição
+                    fk_info += f"  - {valor[0]}: {valor[1]}\n"
+                else:
+                    fk_info += f"  - {valor[0]}\n"
+    
+    # Instruções específicas por tabela
     instrucoes_especificas = {
-        'Taxon': 'Use nomes taxonômicos reais (ex: Animalia, Chordata, Mammalia, etc.). IDs sequenciais começando em 1.',
-        'Hierarquia': 'Respeite a hierarquia taxonômica: Domínio(1) → Reino(2) → Filo(3) → etc.',
-        'Especie': 'Use nomes científicos reais de espécies (ex: Homo sapiens, Canis lupus). IUCN: LC, NT, VU, EN, CR, EW, EX.',
-        'Especime': 'Descritivos como "Espécime adulto macho", "Jovem fêmea", "Esqueleto completo".',
-        'Local_de_Coleta': 'Use locais reais como "Floresta Amazônica", "Mata Atlântica", "Cerrado".',
-        'Amostra': 'Tipos: sangue, pele, osso, DNA, fezes, pelo, escama, etc.',
-        'Projeto': 'Nomes científicos realistas, status atual dos projetos.',
-        'Funcionario': 'Nomes brasileiros, CPFs válidos (11 dígitos), cargos: Pesquisador, Técnico, Bolsista, etc.',
-        'Laboratorio': 'Nomes como "Lab. de Genética", "Lab. de Taxonomia", endereços de universidades.',
-        'Financiador': 'Órgãos como CNPq, CAPES, FAPESP, universidades.',
-        'Equipamento': 'Microscópios, sequenciadores, centrífugas, etc.',
-        'Midia': 'ATENÇÃO: Use build_prompt_for_media_table() para esta tabela. Campo BLOB sempre null.'
+        'hierarquia': 'Crie relações hierárquicas válidas: Domínio → Reino → Filo → Classe → Ordem → Família → Gênero. Use os IDs dos táxons já existentes.',
+        'especie': 'Use gêneros já cadastrados. Nomes científicos reais (binomial). IUCN válidos: LC, NT, VU, EN, CR, EW, EX.',
+        'especime': 'Referencie espécies já cadastradas. Descritivos realistas como "Espécime adulto macho", "Jovem fêmea".',
+        'amostra': 'Use espécies e locais já cadastrados. Tipos: sangue, pele, osso, DNA, fezes, pelo, escama.',
+        'artigo': 'Referencie projetos já cadastrados. Títulos científicos realistas, DOIs válidos.',
+        'proj_func': 'Use projetos e funcionários já cadastrados. Cada combinação deve ser única.',
+        'proj_esp': 'Use projetos e espécies já cadastradas. Relacione espécies relevantes aos projetos.',
+        'proj_cat': 'Use projetos e categorias já cadastradas.',
+        'contrato': 'Use funcionários e laboratórios já cadastrados. Status válidos: Pendente, Ativo, Suspenso, Cancelado, Encerrado.',
+        'financiamento': 'Use projetos e financiadores já cadastrados.',
+        'registro_de_uso': 'Use funcionários e equipamentos já cadastrados. Timestamps realistas.'
     }
     
     instrucao_tabela = instrucoes_especificas.get(tabela_alvo, 'Gere dados realistas e coerentes.')
@@ -375,44 +393,39 @@ def build_prompt(schema: dict, tabela_alvo: str, n_linhas=20):
     prompt = f"""
     {contexto_banco}
     
-    SCHEMA COMPLETO DO BANCO:
-    {script}
-    
-    TABELA ALVO: {tabela_alvo}
-    Campos da tabela:
+    SCHEMA DA TABELA ALVO: {tabela_alvo}
     {campos_str}
     
-    INSTRUÇÕES ESPECÍFICAS:
+    {contexto_existente}
+    
+    {fk_info}
+    
+    INSTRUÇÕES ESPECÍFICAS PARA {tabela_alvo.upper()}:
     {instrucao_tabela}
     
     TAREFA:
-    Gere exatamente {n_linhas} registros realistas para a tabela `{tabela_alvo}` considerando o contexto científico do laboratório de taxonomia.
+    Gere exatamente {n_linhas} registros realistas para a tabela `{tabela_alvo}`.
     
-    FORMATO DE RESPOSTA (OBRIGATÓRIO):
-    Retorne APENAS um objeto JSON válido no seguinte formato:
+    REGRAS OBRIGATÓRIAS:
+    - Use APENAS os valores de FK listados acima (se aplicável)
+    - Mantenha consistência com os dados já existentes
+    - IDs sequenciais apropriados
+    - Para campos de data: formato 'YYYY-MM-DD'
+    - Para timestamps: formato 'YYYY-MM-DD HH:MM:SS'
+    - Para campos BLOB: sempre null
+    - Valores realistas e cientificamente plausíveis
+    
+    FORMATO DE RESPOSTA:
     {{
         "registros": [
             {{"campo1": valor1, "campo2": valor2, ...}},
-            {{"campo1": valor1, "campo2": valor2, ...}},
-            ...
+            {{"campo1": valor1, "campo2": valor2, ...}}
         ]
     }}
     
-    REGRAS IMPORTANTES:
-    - Use valores apropriados para cada tipo de campo (int, varchar, date, decimal)
-    - Para campos de data, use formato 'YYYY-MM-DD'
-    - Para campos decimais, use números com até 2 casas decimais
-    - Para varchar, respeite os limites de caracteres
-    - Para campos BLOB, use null (dados binários não podem ser gerados em JSON)
-    - IDs devem ser sequenciais começando em 1
-    - Mantenha coerência entre dados relacionados
-    
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
+    Responda SOMENTE com o JSON válido, sem explicações.
     """
+    
     return prompt.strip()
 
 
@@ -459,6 +472,7 @@ def build_prompt_for_media_table(schema: dict, tabela_alvo: str, n_linhas=20):
 def insert_data_from_json(conexao, nome_tabela, json_dados):
     """
     Insere dados em uma tabela a partir de um JSON estruturado.
+    Retorna True se a inserção for bem-sucedida, False caso contrário.
     """
     if "registros" not in json_dados:
         raise ValueError("JSON deve conter a chave 'registros'")
@@ -466,7 +480,7 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     registros = json_dados["registros"]
     if not registros:
         print(f"Nenhum registro para inserir na tabela {nome_tabela}")
-        return
+        return False
     
     # Pega os campos do primeiro registro
     campos = list(registros[0].keys())
@@ -645,10 +659,10 @@ def create_placeholder_image(nome_especie, tamanho=(400, 300)):
         return None
 
 
-def populate_all_tables(conexao, n_linhas=10):
+def populate_all_tables(conexao, n_linhas=10, n_especies=20):
     """
-    Popula todas as tabelas usando o novo formato JSON com ordem correta de dependências.
-    Inclui limpeza de resposta JSON, tratamento de erros melhorado e validação de dados.
+    Versão melhorada que popula todas as tabelas com contexto adequado do banco de dados.
+    Mantém o contexto das tabelas já populadas e usa chaves estrangeiras corretas.
     """
     schema = get_schema_info(conexao)
     
@@ -690,6 +704,7 @@ def populate_all_tables(conexao, n_linhas=10):
     sucessos_totais = 0
     erros_totais = 0
     tabelas_processadas = 0
+    tabelas_ja_populadas = []  # Lista para manter contexto das tabelas já processadas
 
     for tabela_nome in tabelas_ordenadas:
         print(f"\n{'='*70}")
@@ -703,16 +718,18 @@ def populate_all_tables(conexao, n_linhas=10):
             cursor.close()
             
             if total_existente > 0:
-                print(f"Tabela `{tabela_nome.upper()}` já contém {total_existente} registros. Pulando...")
+                print(f"Tabela `{tabela_nome.upper()}` já contém {total_existente} registros. Adicionando ao contexto...")
+                tabelas_ja_populadas.append(tabela_nome)
                 continue
             
             # TRATAMENTO ESPECIAL PARA TABELA TAXON
             if tabela_nome.lower() == 'taxon':
                 print("Aplicando tratamento especial para a tabela `Taxon`...")
-                resultado = populate_taxon_table(conexao)
+                resultado = populate_taxon_table(conexao, n_especies)
                 if resultado:
                     sucessos_totais += 1
                     tabelas_processadas += 1
+                    tabelas_ja_populadas.append(tabela_nome)
                 else:
                     erros_totais += 1
                 continue
@@ -724,6 +741,7 @@ def populate_all_tables(conexao, n_linhas=10):
                 if resultado:
                     sucessos_totais += 1
                     tabelas_processadas += 1
+                    tabelas_ja_populadas.append(tabela_nome)
                 else:
                     erros_totais += 1
                 continue
@@ -735,17 +753,31 @@ def populate_all_tables(conexao, n_linhas=10):
                 erros_totais += 1
                 continue
 
+            # COLETA O CONTEXTO DAS TABELAS JÁ POPULADAS
+            print("Coletando contexto das tabelas já populadas...")
+            contexto_dados = get_existing_data_for_context(conexao, tabelas_ja_populadas, limite_por_tabela=5)
+            
+            # COLETA AS CHAVES ESTRANGEIRAS DISPONÍVEIS
+            print("Coletando chaves estrangeiras disponíveis...")
+            foreign_keys_data = get_available_foreign_keys(conexao, tabela_nome)
+            
+            # Log do contexto coletado para debug
+            if contexto_dados:
+                print(f"Contexto disponível de {len(contexto_dados)} tabelas: {list(contexto_dados.keys())}")
+            if foreign_keys_data:
+                print(f"Chaves estrangeiras encontradas: {list(foreign_keys_data.keys())}")
+
             # GERAÇÃO DE DADOS VIA IA PARA OUTRAS TABELAS
-            print(f"Gerando {n_linhas} registros via IA...")
+            print(f"Gerando {n_linhas} registros via IA com contexto...")
             
             # Ajusta número de linhas baseado nas dependências disponíveis
             n_linhas_ajustado = adjust_row(conexao, tabela_nome, n_linhas)
             
-            # Escolhe o prompt adequado
+            # Escolhe o prompt adequado COM CONTEXTO
             if tabela_nome.lower() == 'midia':
                 prompt = build_prompt_for_media_table(schema, tabela_nome, n_linhas_ajustado)
             else:
-                prompt = build_prompt(schema, tabela_nome, n_linhas_ajustado)
+                prompt = build_prompt(schema, tabela_nome, n_linhas_ajustado, contexto_dados, foreign_keys_data)
             
             # Gera dados com retry em caso de erro
             resposta = None
@@ -761,7 +793,7 @@ def populate_all_tables(conexao, n_linhas=10):
                     else:
                         print(f"Resposta vazia na tentativa {tentativa}")
                         
-                except Exception as e:
+                except (openai.error.OpenAIError, requests.exceptions.RequestException) as e:
                     print(f"Erro na tentativa {tentativa}: {e}")
                     if tentativa == max_tentativas:
                         raise
@@ -787,7 +819,7 @@ def populate_all_tables(conexao, n_linhas=10):
                 
                 if not isinstance(dados_json, dict) or "registros" not in dados_json:
                     print(f"Estrutura JSON inválida para `{tabela_nome.upper()}`")
-                    print(f"Esperado: {{'registros': [...]}}")
+                    print("Esperado: {{'registros': [...]}}")
                     print(f"Recebido: {str(dados_json)[:100]}...")
                     erros_totais += 1
                     continue
@@ -803,6 +835,21 @@ def populate_all_tables(conexao, n_linhas=10):
                     erros_totais += 1
                     continue
                 
+                # Validação básica de chaves estrangeiras inline
+                if foreign_keys_data:
+                    print("Validando e corrigindo chaves estrangeiras...")
+                    for i, registro in enumerate(registros):
+                        for campo_fk, valores_validos in foreign_keys_data.items():
+                            if campo_fk in registro:
+                                valor_atual = registro[campo_fk]
+                                ids_validos = [v[0] for v in valores_validos] if valores_validos else []
+                                
+                                # Se o valor não é válido, substitui por um aleatório válido
+                                if valor_atual not in ids_validos and ids_validos:
+                                    novo_valor = random.choice(ids_validos)
+                                    print(f"  Corrigindo registro {i+1}: {campo_fk} {valor_atual} → {novo_valor}")
+                                    registro[campo_fk] = novo_valor
+                
                 # Insere os dados
                 print(f"Inserindo {len(registros)} registros...")
                 resultado_insercao = insert_data_from_json(conexao, tabela_nome, dados_json)
@@ -811,6 +858,7 @@ def populate_all_tables(conexao, n_linhas=10):
                     print(f"Tabela `{tabela_nome.upper()}` processada com sucesso")
                     sucessos_totais += 1
                     tabelas_processadas += 1
+                    tabelas_ja_populadas.append(tabela_nome)  # Adiciona ao contexto para próximas tabelas
                 else:
                     print(f"Falha na inserção para `{tabela_nome.upper()}`")
                     erros_totais += 1
@@ -826,7 +874,7 @@ def populate_all_tables(conexao, n_linhas=10):
                 erros_totais += 1
                 continue
                 
-        except (mysql.connector.Error, Exception) as e:
+        except (mysql.connector.Error, ValueError, KeyError, TypeError) as e:
             print(f"Erro crítico ao processar `{tabela_nome.upper()}`: {e}")
             erros_totais += 1
             continue
@@ -885,39 +933,63 @@ def verify_dependencies(conexao, tabela_nome, schema):
 def adjust_row(conexao, tabela_nome, n_linhas_original):
     """
     Ajusta o número de linhas baseado nas dependências disponíveis.
+    Versão melhorada que considera múltiplas dependências.
     """
-    # Para tabelas que dependem de outras, limita o número de registros
-    limitadores = {
-        'especime': 'especie',
-        'amostra': 'especie', 
-        'midia': 'especime',
-        'artigo': 'projeto',
-        'proj_func': 'funcionario',
-        'proj_esp': 'especie',
-        'proj_cat': 'categoria',
-        'contrato': 'funcionario',
-        'financiamento': 'projeto',
-        'registro_de_uso': 'funcionario'
+    # Mapeamento de dependências múltiplas
+    dependencias_multiplas = {
+        'especime': ['especie'],
+        'amostra': ['especie', 'local_de_coleta'], 
+        'midia': ['especime'],
+        'artigo': ['projeto'],
+        'proj_func': ['projeto', 'funcionario'],
+        'proj_esp': ['projeto', 'especie'],
+        'proj_cat': ['projeto', 'categoria'],
+        'contrato': ['funcionario', 'laboratorio'],
+        'financiamento': ['projeto', 'financiador'],
+        'registro_de_uso': ['funcionario', 'equipamento']
     }
     
-    if tabela_nome not in limitadores:
+    if tabela_nome not in dependencias_multiplas:
         return n_linhas_original
     
     cursor = conexao.cursor()
     try:
-        tabela_pai = limitadores[tabela_nome]
-        cursor.execute(f"SELECT COUNT(*) FROM `{tabela_pai}`")
-        count_pai = cursor.fetchone()[0]
+        dependencias = dependencias_multiplas[tabela_nome]
+        min_registros = []
         
-        # Limita a no máximo 2x o número de registros na tabela pai
-        limite = min(n_linhas_original, max(1, count_pai * 2))
+        # Verifica o número de registros em cada tabela dependente
+        for tabela_dep in dependencias:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM `{tabela_dep}`")
+                count = cursor.fetchone()[0]
+                min_registros.append(count)
+                print(f"Tabela `{tabela_dep.upper()}` tem {count} registros disponíveis")
+            except mysql.connector.Error as e:
+                # Se a tabela não existe, assume 0
+                print(f"Erro ao acessar tabela {tabela_dep}: {e}")
+                min_registros.append(0)
+        
+        if not min_registros or min(min_registros) == 0:
+            print(f"Nenhum registro disponível nas dependências de {tabela_nome.upper()}")
+            return 0
+        
+        # Para tabelas de relacionamento (muitos-para-muitos), permite mais combinações
+        if tabela_nome.startswith('proj_'):
+            # Permite até o produto das tabelas relacionadas, mas com limite razoável
+            limite_max = min(min_registros[0] * min_registros[1], n_linhas_original * 3)
+        else:
+            # Para outras tabelas, limita baseado na menor dependência
+            limite_max = min(min_registros) * 2  # Permite até 2x o menor número
+        
+        limite = min(n_linhas_original, max(1, limite_max))
         
         if limite != n_linhas_original:
-            print(f"Ajustando número de linhas de {n_linhas_original} para {limite} (baseado em {tabela_pai.upper()})")
+            print(f"Ajustando número de linhas de {n_linhas_original} para {limite} (baseado em dependências)")
         
         return limite
         
-    except mysql.connector.Error:
+    except mysql.connector.Error as e:
+        print(f"Erro ao ajustar número de linhas para {tabela_nome}: {e}")
         return n_linhas_original
     finally:
         cursor.close()
@@ -950,15 +1022,268 @@ def validate_structure(registros, schema_colunas):
     return cobertura >= 0.5
 
 
-def populate_taxon_table(conexao):
+def get_available_foreign_keys(conexao, tabela_nome):
+    """
+    Obtém os valores disponíveis de chaves estrangeiras para uma tabela específica.
+    """
+    fk_mappings = {
+        'hierarquia': {
+            'ID_Tax': 'SELECT ID_Tax, Tipo, Nome FROM Taxon ORDER BY ID_Tax',
+            'ID_TaxTopo': 'SELECT ID_Tax, Tipo, Nome FROM Taxon ORDER BY ID_Tax'
+        },
+        'especie': {
+            'ID_Gen': 'SELECT ID_Tax, Nome FROM Taxon WHERE Tipo = "Gênero" ORDER BY ID_Tax'
+        },
+        'especime': {
+            'ID_Esp': 'SELECT ID_Esp, Nome FROM Especie ORDER BY ID_Esp'
+        },
+        'amostra': {
+            'ID_Esp': 'SELECT ID_Esp, Nome FROM Especie ORDER BY ID_Esp',
+            'ID_Local': 'SELECT ID_Local, Nome FROM Local_de_Coleta ORDER BY ID_Local'
+        },
+        'midia': {
+            'ID_Especime': 'SELECT ID_Especime, Descritivo FROM Especime ORDER BY ID_Especime'
+        },
+        'artigo': {
+            'ID_Proj': 'SELECT ID_Proj, Nome FROM Projeto ORDER BY ID_Proj'
+        },
+        'proj_func': {
+            'ID_Proj': 'SELECT ID_Proj, Nome FROM Projeto ORDER BY ID_Proj',
+            'ID_Func': 'SELECT ID_Func, Nome FROM Funcionario ORDER BY ID_Func'
+        },
+        'proj_esp': {
+            'ID_Proj': 'SELECT ID_Proj, Nome FROM Projeto ORDER BY ID_Proj',
+            'ID_Esp': 'SELECT ID_Esp, Nome FROM Especie ORDER BY ID_Esp'
+        },
+        'proj_cat': {
+            'ID_Proj': 'SELECT ID_Proj, Nome FROM Projeto ORDER BY ID_Proj',
+            'ID_Categ': 'SELECT ID_Categ, Descritivo FROM Categoria ORDER BY ID_Categ'
+        },
+        'contrato': {
+            'ID_Func': 'SELECT ID_Func, Nome FROM Funcionario ORDER BY ID_Func',
+            'ID_Lab': 'SELECT ID_Lab, Nome FROM Laboratorio ORDER BY ID_Lab'
+        },
+        'financiamento': {
+            'ID_Proj': 'SELECT ID_Proj, Nome FROM Projeto ORDER BY ID_Proj',
+            'ID_Financiador': 'SELECT ID_Financiador, Descritivo FROM Financiador ORDER BY ID_Financiador'
+        },
+        'registro_de_uso': {
+            'ID_Func': 'SELECT ID_Func, Nome FROM Funcionario ORDER BY ID_Func',
+            'ID_Equip': 'SELECT ID_Equip, Tipo, Modelo FROM Equipamento ORDER BY ID_Equip'
+        }
+    }
+    
+    if tabela_nome not in fk_mappings:
+        return {}
+    
+    cursor = conexao.cursor()
+    foreign_keys_data = {}
+    
+    try:
+        for campo, query in fk_mappings[tabela_nome].items():
+            cursor.execute(query)
+            resultados = cursor.fetchall()
+            foreign_keys_data[campo] = resultados
+            
+        return foreign_keys_data
+        
+    except mysql.connector.Error as e:
+        print(f"Erro ao obter FKs para {tabela_nome}: {e}")
+        return {}
+    finally:
+        cursor.close()
+
+
+def get_existing_data_for_context(conexao, tabelas_ja_populadas, limite_por_tabela=5):
+    """
+    Obtém dados das tabelas já populadas para usar como contexto na geração de novos dados.
+    """
+    contexto_dados = {}
+    cursor = conexao.cursor()
+    
+    for tabela in tabelas_ja_populadas:
+        try:
+            # Busca alguns registros de exemplo de cada tabela
+            cursor.execute(f"SELECT * FROM `{tabela}` LIMIT {limite_por_tabela}")
+            registros = cursor.fetchall()
+            
+            if registros:
+                # Obtém os nomes das colunas
+                cursor.execute(f"DESCRIBE `{tabela}`")
+                colunas = [col[0] for col in cursor.fetchall()]
+                
+                # Converte para formato legível
+                registros_dict = []
+                for registro in registros:
+                    registro_dict = {}
+                    for i, valor in enumerate(registro):
+                        # Trata campos BLOB (converte para texto indicativo)
+                        if isinstance(valor, bytes):
+                            registro_dict[colunas[i]] = f"<BLOB:{len(valor)}bytes>"
+                        else:
+                            registro_dict[colunas[i]] = valor
+                    registros_dict.append(registro_dict)
+                
+                contexto_dados[tabela] = registros_dict
+                
+        except mysql.connector.Error as e:
+            print(f"Erro ao obter dados de {tabela}: {e}")
+            continue
+    
+    cursor.close()
+    return contexto_dados
+
+
+def analyze_table_relationships(conexao, tabela_nome, tabelas_ja_populadas):
+    """
+    Analisa as relações entre a tabela atual e as já populadas para fornecer contexto mais rico.
+    """
+    relacionamentos = {}
+    cursor = conexao.cursor()
+    
+    try:
+        # Mapeamento das relações conhecidas
+        relacoes_conhecidas = {
+            'hierarquia': {
+                'tabela_pai': 'taxon',
+                'descricao': 'hierarquia taxonômica',
+                'campos_relevantes': ['ID_Tax', 'ID_TaxTopo']
+            },
+            'especie': {
+                'tabela_pai': 'taxon',
+                'descricao': 'espécies por gênero',
+                'campos_relevantes': ['ID_Gen']
+            },
+            'especime': {
+                'tabela_pai': 'especie',
+                'descricao': 'espécimes por espécie',
+                'campos_relevantes': ['ID_Esp']
+            },
+            'amostra': {
+                'tabelas_pai': ['especie', 'local_de_coleta'],
+                'descricao': 'amostras por espécie e local',
+                'campos_relevantes': ['ID_Esp', 'ID_Local']
+            },
+            'midia': {
+                'tabela_pai': 'especime',
+                'descricao': 'mídia por espécime',
+                'campos_relevantes': ['ID_Especime']
+            },
+            'proj_func': {
+                'tabelas_pai': ['projeto', 'funcionario'],
+                'descricao': 'funcionários por projeto',
+                'campos_relevantes': ['ID_Proj', 'ID_Func']
+            },
+            'proj_esp': {
+                'tabelas_pai': ['projeto', 'especie'],
+                'descricao': 'espécies por projeto',
+                'campos_relevantes': ['ID_Proj', 'ID_Esp']
+            }
+        }
+        
+        if tabela_nome in relacoes_conhecidas:
+            info = relacoes_conhecidas[tabela_nome]
+            
+            # Verifica se é relação simples ou múltipla
+            if 'tabela_pai' in info:
+                tabela_pai = info['tabela_pai']
+                if tabela_pai in tabelas_ja_populadas:
+                    cursor.execute(f"SELECT COUNT(*) FROM `{tabela_pai}`")
+                    count = cursor.fetchone()[0]
+                    relacionamentos[tabela_pai] = {
+                        'count': count,
+                        'descricao': info['descricao'],
+                        'campos': info['campos_relevantes']
+                    }
+            
+            elif 'tabelas_pai' in info:
+                for tabela_pai in info['tabelas_pai']:
+                    if tabela_pai in tabelas_ja_populadas:
+                        cursor.execute(f"SELECT COUNT(*) FROM `{tabela_pai}`")
+                        count = cursor.fetchone()[0]
+                        relacionamentos[tabela_pai] = {
+                            'count': count,
+                            'descricao': info['descricao'],
+                            'campos': info['campos_relevantes']
+                        }
+        
+        return relacionamentos
+        
+    except mysql.connector.Error as e:
+        print(f"Erro ao analisar relacionamentos para {tabela_nome}: {e}")
+        return {}
+    finally:
+        cursor.close()
+
+
+def get_smart_context_summary(conexao, tabelas_ja_populadas):
+    """
+    Gera um resumo inteligente das tabelas já populadas para contextualizar melhor a IA.
+    """
+    cursor = conexao.cursor()
+    resumo = {}
+    
+    try:
+        for tabela in tabelas_ja_populadas:
+            cursor.execute(f"SELECT COUNT(*) FROM `{tabela}`")
+            count = cursor.fetchone()[0]
+            
+            # Pega alguns exemplos específicos baseados no tipo de tabela
+            if tabela.lower() == 'taxon':
+                cursor.execute("SELECT Tipo, COUNT(*) FROM Taxon GROUP BY Tipo")
+                tipos_taxa = cursor.fetchall()
+                resumo[tabela] = {
+                    'total': count,
+                    'detalhes': f"Tipos taxonômicos: {dict(tipos_taxa)}"
+                }
+            
+            elif tabela.lower() == 'especie':
+                cursor.execute("SELECT Nome FROM Especie LIMIT 3")
+                exemplos = [row[0] for row in cursor.fetchall()]
+                resumo[tabela] = {
+                    'total': count,
+                    'detalhes': f"Exemplos: {', '.join(exemplos)}"
+                }
+            
+            elif tabela.lower() == 'projeto':
+                cursor.execute("SELECT Nome FROM Projeto LIMIT 3")
+                exemplos = [row[0] for row in cursor.fetchall()]
+                resumo[tabela] = {
+                    'total': count,
+                    'detalhes': f"Projetos: {', '.join(exemplos)}"
+                }
+            
+            else:
+                resumo[tabela] = {
+                    'total': count,
+                    'detalhes': f"{count} registros disponíveis"
+                }
+    
+    except mysql.connector.Error as e:
+        print(f"Erro ao gerar resumo de contexto: {e}")
+        return {}
+    finally:
+        cursor.close()
+    
+    return resumo
+
+
+def populate_taxon_table(conexao, n_especies=250):
     """
     Versão corrigida para popular a tabela Taxon respeitando o CHECK constraint.
     """
     try:
         print("Gerando taxonomia completa via IA...")
         
-        prompt = """
-        Gere uma taxonomia completa para espécies de laboratório. 
+        prompt = f"""
+        Gere uma taxonomia completa para espécies {n_especies} de laboratório.
+        
+        CREATE TABLE Taxon (
+            ID_Tax integer PRIMARY KEY,
+            Tipo varchar(10) NOT NULL,
+            Nome varchar(50) NOT NULL,
+            UNIQUE (Tipo, Nome),
+        CHECK (Tipo IN ('Domínio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Família', 'Gênero'))); 
         
         IMPORTANTE: Use EXATAMENTE estes tipos (respeitando acentos):
         - Domínio
@@ -988,9 +1313,9 @@ def populate_taxon_table(conexao):
                 {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"}
             ]
         }
-        
-        Gere cerca de 250 registros cobrindo todos os tipos taxonômicos.
-        Use IDs sequenciais de 1 a 250.
+
+        Gere cerca de {n_especies} registros cobrindo todos os tipos taxonômicos.
+        Use IDs sequenciais de 1 a {n_especies}.
         Responda APENAS com o JSON válido.
         """
         
@@ -1138,6 +1463,7 @@ def format_check(resultado, campo=None):
         
         valores_formatados = re.findall(r"'([^']+)'", valores)
         print(f"Valores permitidos para '{atributo}': {', '.join(valores_formatados)}")
+
 
 def check_ckeck(conexao, tabela, campo=None):
     '''
@@ -1863,9 +2189,11 @@ if __name__ == "__main__":
                     delete_by_user(con)
 
                 case 7:
-                    n = input("Quantas linhas por tabela? [padrão=10]: ").strip()
-                    n = int(n) if n.isdigit() and int(n) > 0 else 10
-                    populate_all_tables(con, n_linhas=n)
+                    n_linhas = input("Quantas linhas por tabela? [padrão=10]: ").strip()
+                    n_linhas = int(n_linhas) if n_linhas.isdigit() and int(n_linhas) > 0 else 10
+                    n_esp = input("Quantas espécies? [padrão=5]: ").strip()
+                    n_esp = int(n_esp) if n_esp.isdigit() and int(n_esp) > 0 else 100
+                    populate_all_tables(con, n_linhas=n_linhas, n_especies=n_esp)
 
                 case 8:
                     tabela = input("Tabela para atualizar: ").strip()
@@ -1920,3 +2248,4 @@ if __name__ == "__main__":
     finally:
             if 'con' in locals() and con.is_connected():
                 exit_db(con)
+# Fim do script principal
