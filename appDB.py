@@ -476,8 +476,7 @@ def populate_all_tables(conexao, n_linhas=10):
     """
     Popula todas as tabelas usando o novo formato JSON.
     """
-    import json
-    
+
     schema = get_schema_info(conexao)
     ordem = ["Taxon", "Hierarquia", "Especie", "Especime", 
             "Local_de_Coleta", "Amostra", "Midia", "Projeto", 
@@ -506,10 +505,16 @@ def populate_all_tables(conexao, n_linhas=10):
             if total > 0:
                 print(f"Tabela `{tabela_nome.upper()}` já contém {total} registros. Pulando...")
                 continue
+            
+            # TRATAMENTO ESPECIAL PARA TABELA TAXON
+            if tabela_nome.lower() == 'taxon':
+                print("  → Tratamento especial para a tabela `Taxon`...")
+                populate_taxon_table(conexao)
+                continue
 
             # TRATAMENTO ESPECIAL PARA TABELA MIDIA
             if tabela_nome.lower() == 'midia':
-                print(f"  → Usando populate_midia_table() para buscar imagens reais...")
+                print("  → Preenchendo tabela `Midia` com imagens reais...")
                 populate_midia_table(conexao)
                 continue
 
@@ -650,6 +655,67 @@ def create_placeholder_image(nome_especie, tamanho=(400, 300)):
     except (OSError, IOError) as e:
         print(f"Erro ao criar placeholder para '{nome_especie}': {e}")
         return None
+
+
+def populate_taxon_table(conexao):
+    """
+    Popula a tabela Taxon com a taxonomia completa para as espécies.
+    """
+    schema = get_schema_info(conexao)
+    if 'Taxon' not in schema:
+        print("Tabela `Taxon` não encontrada no banco de dados.")
+        return
+
+    # Gera o prompt para preencher toda a taxonomia
+    prompt = """
+    Gere uma taxonomia completa para espécies fictícias. A taxonomia deve incluir os seguintes níveis:
+    - Domínio
+    - Reino
+    - Filo
+    - Classe
+    - Ordem
+    - Família
+    - Gênero
+
+    Cada nível deve ser coerente com o anterior. Retorne os dados no seguinte formato JSON:
+    {
+        "registros": [
+            {"ID_Tax": 1, "Tipo": "Domínio", "Nome": "Eukaryota"},
+            {"ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia"},
+            {"ID_Tax": 3, "Tipo": "Filo", "Nome": "Chordata"},
+            {"ID_Tax": 4, "Tipo": "Classe", "Nome": "Mammalia"},
+            {"ID_Tax": 5, "Tipo": "Ordem", "Nome": "Primates"},
+            {"ID_Tax": 6, "Tipo": "Família", "Nome": "Hominidae"},
+            {"ID_Tax": 7, "Tipo": "Gênero", "Nome": "Homo"}
+        ]
+    }
+    """
+    print("  → Gerando taxonomia completa via IA...")
+    resposta = generate_data(prompt)
+
+    try:
+        # Parse do JSON
+        dados_json = json.loads(resposta)
+        registros = dados_json.get("registros", [])
+        if not registros:
+            print("Nenhum registro gerado para a tabela `Taxon`.")
+            return
+
+        # Insere os dados na tabela Taxon
+        cursor = conexao.cursor()
+        for registro in registros:
+            query = "INSERT INTO Taxon (ID_Tax, Tipo, Nome) VALUES (%s, %s, %s)"
+            valores = (registro["ID_Tax"], registro["Tipo"], registro["Nome"])
+            cursor.execute(query, valores)
+
+        conexao.commit()
+        cursor.close()
+        print("✓ Tabela `Taxon` populada com sucesso")
+    except json.JSONDecodeError as e:
+        print(f"Erro ao fazer parse do JSON para `Taxon`: {e}")
+        print(f"Resposta recebida: {resposta[:200]}...")
+    except mysql.connector.Error as e:
+        print(f"Erro ao inserir dados na tabela `Taxon`: {e}")
 
 
 def populate_midia_table(conexao, delay_entre_requisicoes=2):
