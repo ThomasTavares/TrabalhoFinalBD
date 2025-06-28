@@ -455,7 +455,12 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     # Pega os campos do primeiro registro
     campos = list(registros[0].keys())
     
+    # Obtém o schema da tabela para verificar os tamanhos máximos das colunas
     cursor = conexao.cursor()
+    cursor.execute(f"DESCRIBE `{nome_tabela}`")
+    colunas_detalhes = cursor.fetchall()
+    schema_colunas = {col[0]: col[1] for col in colunas_detalhes}  # Mapeia nome da coluna para tipo
+
     placeholders = ", ".join(["%s"] * len(campos))
     campos_sql = ", ".join([f"`{c}`" for c in campos])
     insert_query = f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
@@ -465,9 +470,20 @@ def insert_data_from_json(conexao, nome_tabela, json_dados):
     
     for registro in registros:
         try:
-            # Converte os valores do registro para uma tupla na ordem correta
-            valores = tuple(registro[campo] for campo in campos)
-            cursor.execute(insert_query, valores)
+            # Trunca os valores com base no tamanho máximo permitido no schema
+            valores = []
+            for campo in campos:
+                valor = registro[campo]
+                if campo in schema_colunas and "varchar" in schema_colunas[campo].lower():
+                    # Extrai o tamanho máximo do varchar
+                    max_len_match = re.search(r'varchar\((\d+)\)', schema_colunas[campo].lower())
+                    if max_len_match:
+                        max_len = int(max_len_match.group(1))
+                        valor = truncate_value(valor, max_len)
+                valores.append(valor)
+            
+            # Executa a inserção
+            cursor.execute(insert_query, tuple(valores))
             sucessos += 1
         except mysql.connector.Error as err:
             print(f"Erro ao inserir registro {registro}: {err}")
@@ -697,14 +713,14 @@ def populate_taxon_table(conexao):
         ]
     }
     Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
-    Responda SOMENTE com o JSON, sem explicações ou texto adicional.
     """
     print("  → Gerando taxonomia completa via IA...")
     resposta = generate_data(prompt)
+
+    # Valida a resposta antes de processar
+    if not resposta.strip():
+        print("Erro: Resposta da IA está vazia.")
+        return
 
     try:
         # Parse do JSON
@@ -829,6 +845,12 @@ def populate_midia_table(conexao, delay_entre_requisicoes=2):
         print(f"Erro de sistema ao popular tabela Midia: {e}")
     finally:
         cursor.close()
+
+
+def truncate_value(value, max_length):
+    if isinstance(value, str) and len(value) > max_length:
+        return value[:max_length]
+    return value
 
 
 def check_ckeck(conexao, tabela):
