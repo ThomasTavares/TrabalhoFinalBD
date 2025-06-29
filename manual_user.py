@@ -171,6 +171,28 @@ def delete_by_user(conexao):
     print("\n" + "="*50)
 
 
+def format_check(resultado, campo=None):
+    '''Formata e exibe os valores permitidos de uma CHECK constraint.
+    Parâmetros:
+        resultado: Resultado da consulta de CHECK constraints.
+        campo: (opcional) Nome do campo específico para filtrar os resultados.
+    Retorna:
+        None.
+    '''
+    check = resultado[1] if isinstance(resultado, tuple) else resultado
+    match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check, re.IGNORECASE)
+    
+    if match:
+        if campo and campo.lower() != match.group(1).lower():
+            return
+        
+        atributo = match.group(1)
+        valores = match.group(2)
+        
+        valores_formatados = re.findall(r"'([^']+)'", valores)
+        print(f"\nValores permitidos para '{atributo}': {', '.join(valores_formatados)}")
+
+
 def check_check(conexao, tabela, campo=None):
     '''
     Verifica se a tabela possui CHECK constraints
