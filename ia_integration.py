@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from PIL import Image, ImageDraw, ImageFont
 
-from db_operations import create_tables, insert_data_from_json, get_schema_info  
+from db_operations import insert_data_from_json, get_schema_info  
 
 try:
     from transformers import CLIPProcessor, CLIPModel
@@ -52,8 +52,8 @@ def get_openai_key():
     Retorna:
         str: Chave de API da OpenAI.
     """
-    api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
-    # api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
+    # api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
+    api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
     try:
         with open(api_key_file, "r", encoding="utf-8") as f:
             api_key_value = f.read().strip()  # Remove quebras de linha e espaços
@@ -761,39 +761,16 @@ def populate_all_tables(conexao, n_linhas=10, n_especies=20):
     cursor.close()
     
     if not tabelas_banco:
-        print("\n❌ ERRO: Nenhuma tabela encontrada no banco de dados!")
-        print("\n💡 SOLUÇÃO: Você precisa criar as tabelas primeiro.")
-        resposta = input("\nDeseja criar as tabelas automaticamente agora? (s/N): ").strip().lower()
-        
-        if resposta in ['s', 'sim', 'y', 'yes']:
-            print("\n🔧 Criando tabelas automaticamente...")
-            try:
-                create_tables(conexao)
-                print("✅ Tabelas criadas com sucesso!")
-                
-                # Atualiza a lista de tabelas existentes
-                cursor = conexao.cursor()
-                cursor.execute("SHOW TABLES")
-                tabelas_banco = cursor.fetchall()
-                cursor.close()
-                
-                if not tabelas_banco:
-                    print("❌ Erro: Falha ao criar tabelas. Verifique o arquivo script.sql")
-                    return 0, 1
-                    
-            except Exception as e:
-                print(f"❌ Erro ao criar tabelas: {e}")
-                return 0, 1
-        else:
-            print("⚠️  Operação cancelada. Execute a opção 1 (Criar Tabelas) primeiro.")
-            return 0, 1
+        print("\nERRO: Nenhuma tabela encontrada no banco de dados!")
+        print("\nSOLUÇÃO: Você precisa criar as tabelas primeiro.")
+        return
     
     # Cria mapeamento de nomes case-insensitive para nomes reais
     tabelas_existentes = {}
     for (nome_real,) in tabelas_banco:
         tabelas_existentes[nome_real.lower()] = nome_real
     
-    print(f"\n📊 Tabelas encontradas no banco: {list(tabelas_existentes.values())}")
+    print(f"\nTabelas encontradas no banco: {list(tabelas_existentes.values())}")
     
     schema = get_schema_info(conexao)
     

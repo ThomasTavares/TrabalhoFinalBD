@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from prettytable import PrettyTable
 import re
+from ia_integration import validate_and_extract_records, get_table_schema, build_insert_query, execute_insertions
 
 
 def connect_mysql(host="localhost", user="root", password="", database=None, port=3306):
