@@ -39,8 +39,8 @@ def crud(conexao):
 
 if __name__ == "__main__":
     try:
-        # con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
-        con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
+        con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
+        # con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
 
         if not con:
             print("Não foi possível conectar ao banco de dados.")

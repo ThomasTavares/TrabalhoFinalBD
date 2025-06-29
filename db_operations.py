@@ -2,7 +2,6 @@ import mysql.connector
 from mysql.connector import errorcode
 from prettytable import PrettyTable
 import re
-from ia_integration import validate_and_extract_records, get_table_schema, build_insert_query, execute_insertions
 
 
 def connect_mysql(host="localhost", user="root", password="", database=None, port=3306):
@@ -93,36 +92,6 @@ def create_tables(conexao):
     return None
 
 
-def insert_data(conexao, nome_tabela, campos, dados):
-    """
-    Wrapper para insert_data_from_json - converte dados de tupla para JSON.
-    """
-    # Converte lista de tuplas para formato JSON
-    registros = []
-    for linha in dados:
-        registro = {campo: valor for campo, valor in zip(campos, linha)}
-        registros.append(registro)
-    
-    json_dados = {"registros": registros}
-    return insert_data_from_json(conexao, nome_tabela, json_dados)
-
-
-def insert_data_from_json(conexao, nome_tabela, json_dados):
-    """
-    Insere dados em uma tabela a partir de um JSON estruturado.
-    Retorna True se a inserção for bem-sucedida, False caso contrário.
-    """
-    registros = validate_and_extract_records(json_dados, nome_tabela)
-    if not registros:
-        return False
-
-    schema_colunas = get_table_schema(conexao, nome_tabela)
-    campos = list(registros[0].keys())
-    insert_query = build_insert_query(nome_tabela, campos)
-
-    return execute_insertions(conexao, registros, campos, schema_colunas, insert_query)
-
-
 def drop_tables(conexao):
     """
     Remove todas as tabelas do banco de dados conectado.
@@ -168,6 +137,131 @@ def drop_tables(conexao):
 
     except mysql.connector.Error as e:
         print("Erro ao deletar tabelas:", e)
+
+
+def insert_data(conexao, nome_tabela, campos, dados):
+    """
+    Wrapper para insert_data_from_json - converte dados de tupla para JSON.
+    """
+    # Converte lista de tuplas para formato JSON
+    registros = []
+    for linha in dados:
+        registro = {campo: valor for campo, valor in zip(campos, linha)}
+        registros.append(registro)
+    
+    json_dados = {"registros": registros}
+    return insert_data_from_json(conexao, nome_tabela, json_dados)
+
+
+def insert_data_from_json(conexao, nome_tabela, json_dados):
+    """
+    Insere dados em uma tabela a partir de um JSON estruturado.
+    Retorna True se a inserção for bem-sucedida, False caso contrário.
+    """
+    registros = validate_and_extract_records(json_dados, nome_tabela)
+    if not registros:
+        return False
+
+    schema_colunas = get_table_schema(conexao, nome_tabela)
+    campos = list(registros[0].keys())
+    insert_query = build_insert_query(nome_tabela, campos)
+
+    return execute_insertions(conexao, registros, campos, schema_colunas, insert_query)
+
+
+def validate_and_extract_records(json_dados, nome_tabela):
+    """
+    Valida e extrai registros do JSON.
+    """
+    if "registros" not in json_dados:
+        raise ValueError("JSON deve conter a chave 'registros'")
+    
+    registros = json_dados["registros"]
+    if not registros:
+        print(f"Nenhum registro para inserir na tabela {nome_tabela}")
+        return None
+
+    return registros
+
+
+def get_table_schema(conexao, nome_tabela):
+    """
+    Obtém o schema da tabela para verificar os tamanhos máximos das colunas.
+    """
+    cursor = conexao.cursor()
+    cursor.execute(f"DESCRIBE `{nome_tabela}`")
+    colunas_detalhes = cursor.fetchall()
+    cursor.close()
+    return {col[0]: col[1] for col in colunas_detalhes}
+
+
+def build_insert_query(nome_tabela, campos):
+    """
+    Constrói a query de inserção.
+    """
+    placeholders = ", ".join(["%s"] * len(campos))
+    campos_sql = ", ".join([f"`{c}`" for c in campos])
+    return f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
+
+
+def execute_insertions(conexao, registros, campos, schema_colunas, insert_query):
+    """
+    Executa as inserções na tabela.
+    """
+    cursor = conexao.cursor()
+    sucessos, erros = 0, 0
+
+    for registro in registros:
+        try:
+            valores = process_record(registro, campos, schema_colunas)
+            cursor.execute(insert_query, tuple(valores))
+            sucessos += 1
+        except mysql.connector.Error as err:
+            erros += 1
+            handle_insertion_error(err, registro)
+
+    conexao.commit()
+    cursor.close()
+    print(f"Tabela: {sucessos} inserções bem-sucedidas, {erros} erros")
+    return sucessos > 0
+
+
+def handle_insertion_error(err, registro):
+    """
+    Trata erros de inserção.
+    """
+    if err.errno == 1452:  # Foreign key constraint fails
+        print(f"  → Erro FK: Chave estrangeira inválida em {registro}")
+    elif err.errno == 1406:  # Data too long
+        print(f"  → Erro: Dados muito longos em {registro}")
+    else:
+        print(f"  → Erro DB {err.errno}: {err} em {registro}")
+
+
+def process_record(registro, campos, schema_colunas):
+    """
+    Processa e trunca os valores conforme necessário.
+    """
+    valores = []
+    for campo in campos:
+        valor = registro[campo]
+        if campo in schema_colunas and "varchar" in schema_colunas[campo].lower():
+            valor = truncate_varchar(valor, schema_colunas[campo])
+        valores.append(valor)
+    return valores
+
+
+def truncate_varchar(valor, schema_info):
+    """
+    Trunca strings longas para campos varchar.
+    """
+    max_len_match = re.search(r'varchar\((\d+)\)', schema_info.lower())
+    if max_len_match:
+        max_len = int(max_len_match.group(1))
+        if isinstance(valor, str) and len(valor) > max_len:
+            print(f"  → Truncado valor de {len(valor)} para {max_len} caracteres")
+            return valor[:max_len]
+    return valor
 
 
 def print_tables(conexao, print_flag=True):

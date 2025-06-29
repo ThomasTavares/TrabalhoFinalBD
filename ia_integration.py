@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from PIL import Image, ImageDraw, ImageFont
 
-from db_operations import insert_data_from_json, get_schema_info  
+from db_operations import insert_data_from_json, get_schema_info
 
 try:
     from transformers import CLIPProcessor, CLIPModel
@@ -52,8 +52,8 @@ def get_openai_key():
     Retorna:
         str: Chave de API da OpenAI.
     """
-    # api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
-    api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
+    api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
+    # api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
     try:
         with open(api_key_file, "r", encoding="utf-8") as f:
             api_key_value = f.read().strip()  # Remove quebras de linha e espaços
@@ -398,101 +398,6 @@ def validate_generated_data(registros, tabela_nome, schema):
     
     print(f"  Validação: {len(registros_validos)}/{len(registros)} registros válidos")
     return registros_validos
-
-
-def validate_and_extract_records(json_dados, nome_tabela):
-    """
-    Valida e extrai registros do JSON.
-    """
-    if "registros" not in json_dados:
-        raise ValueError("JSON deve conter a chave 'registros'")
-    
-    registros = json_dados["registros"]
-    if not registros:
-        print(f"Nenhum registro para inserir na tabela {nome_tabela}")
-        return None
-
-    return registros
-
-
-def get_table_schema(conexao, nome_tabela):
-    """
-    Obtém o schema da tabela para verificar os tamanhos máximos das colunas.
-    """
-    cursor = conexao.cursor()
-    cursor.execute(f"DESCRIBE `{nome_tabela}`")
-    colunas_detalhes = cursor.fetchall()
-    cursor.close()
-    return {col[0]: col[1] for col in colunas_detalhes}
-
-
-def build_insert_query(nome_tabela, campos):
-    """
-    Constrói a query de inserção.
-    """
-    placeholders = ", ".join(["%s"] * len(campos))
-    campos_sql = ", ".join([f"`{c}`" for c in campos])
-    return f"INSERT INTO `{nome_tabela}` ({campos_sql}) VALUES ({placeholders})"
-
-
-def execute_insertions(conexao, registros, campos, schema_colunas, insert_query):
-    """
-    Executa as inserções na tabela.
-    """
-    cursor = conexao.cursor()
-    sucessos, erros = 0, 0
-
-    for registro in registros:
-        try:
-            valores = process_record(registro, campos, schema_colunas)
-            cursor.execute(insert_query, tuple(valores))
-            sucessos += 1
-        except mysql.connector.Error as err:
-            erros += 1
-            handle_insertion_error(err, registro)
-
-    conexao.commit()
-    cursor.close()
-    print(f"Tabela: {sucessos} inserções bem-sucedidas, {erros} erros")
-    return sucessos > 0
-
-
-def process_record(registro, campos, schema_colunas):
-    """
-    Processa e trunca os valores conforme necessário.
-    """
-    valores = []
-    for campo in campos:
-        valor = registro[campo]
-        if campo in schema_colunas and "varchar" in schema_colunas[campo].lower():
-            valor = truncate_varchar(valor, schema_colunas[campo])
-        valores.append(valor)
-    return valores
-
-
-def truncate_varchar(valor, schema_info):
-    """
-    Trunca strings longas para campos varchar.
-    """
-    max_len_match = re.search(r'varchar\((\d+)\)', schema_info.lower())
-    if max_len_match:
-        max_len = int(max_len_match.group(1))
-        if isinstance(valor, str) and len(valor) > max_len:
-            print(f"  → Truncado valor de {len(valor)} para {max_len} caracteres")
-            return valor[:max_len]
-    return valor
-
-
-def handle_insertion_error(err, registro):
-    """
-    Trata erros de inserção.
-    """
-    if err.errno == 1452:  # Foreign key constraint fails
-        print(f"  → Erro FK: Chave estrangeira inválida em {registro}")
-    elif err.errno == 1406:  # Data too long
-        print(f"  → Erro: Dados muito longos em {registro}")
-    else:
-        print(f"  → Erro DB {err.errno}: {err} em {registro}")
 
 
 def clean_json_response(response):
