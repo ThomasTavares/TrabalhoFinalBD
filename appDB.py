@@ -34,17 +34,6 @@ def crud(conexao):
             print(linha)
         cursor.close()
 
-    
-    if schema:
-        # 5. Atualizar algumas linhas aleatórias de uma tabela
-        tabela_exemplo = next(iter(schema))
-        print(f"\n[CRUD] Atualizando 3 linhas aleatórias da tabela '{tabela_exemplo}'...")
-        update_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=3)
-
-        # 6. Deletar algumas linhas aleatórias da mesma tabela
-        print(f"\n[CRUD] Deletando 2 linhas aleatórias da tabela '{tabela_exemplo}'...")
-        delete_random_rows(conexao, tabela_nome=tabela_exemplo, n_linhas=2)
-
     print("\n[CRUD] CRUD automatizado finalizado.")
 
 
