@@ -110,7 +110,8 @@ CREATE TABLE Funcionario (
 	ID_Func integer PRIMARY KEY,
 	Nome varchar(50) NOT NULL,
 	CPF varchar(11) NOT NULL,
-	Cargo varchar(50) NOT NULL);
+	Cargo varchar(50) NOT NULL,
+	UNIQUE (CPF));
     
 CREATE TABLE Proj_Func (
 	ID_Proj integer,
