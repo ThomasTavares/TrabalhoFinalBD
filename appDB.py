@@ -62,7 +62,8 @@ def get_openai_key():
     Retorna:
         str: Chave de API da OpenAI.
     """
-    api_key_file = "/home/samuks369/Downloads/gpt-key.txt"  # Altere para o caminho do seu arquivo de chave
+    # api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
+    api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
     try:
         with open(api_key_file, "r", encoding="utf-8") as f:
             api_key_value = f.read().strip()  # Remove quebras de linha e espaços
@@ -2929,7 +2930,8 @@ def normalize_case_sensitive_name(name):
 
 if __name__ == "__main__":
     try:
-        con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
+        # con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
+        con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
 
         if not con:
             print("Não foi possível conectar ao banco de dados.")
