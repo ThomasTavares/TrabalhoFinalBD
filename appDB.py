@@ -4,7 +4,7 @@
 
 from db_operations import connect_mysql, create_tables, drop_tables, show_tables, exit_db, get_schema_info
 from manual_user import insert_by_user, update_by_user, delete_by_user
-from ia_integration import  populate_all_tables, generate_sql_query, make_query, search_similarity
+from ia_integration import  populate_all_tables, generate_sql_query, make_query
 import mysql.connector
 
 def crud(conexao):
@@ -59,8 +59,7 @@ if __name__ == "__main__":
 ║ [  6 ] > Deletar Dados Manualmente          ║
 ║ [  7 ] > IA: Preencher Tabelas              ║
 ║ [  8 ] > IA: Gerar SQL a partir de Texto    ║
-║ [  9 ] > IA: Buscar Imagens Similares       ║
-║ [ 10 ] > Executar CRUD Automático           ║
+║ [  9 ] > Executar CRUD Automático           ║
 ║ [  0 ] > Explodir Sistema                   ║
 ╚═════════════════════════════════════════════╝
 """)
@@ -116,19 +115,8 @@ if __name__ == "__main__":
                             make_query(con, query)
                         else:
                             print("Erro: não foi possível gerar a query SQL")
-                
+
                 case 9:
-                    caminho_imagem = input("Caminho da imagem para busca: ").strip()
-                    try:
-                        with open(caminho_imagem, "rb") as f:
-                            imagem_bytes = f.read()
-                        search_similarity(con, imagem_consulta_bytes=imagem_bytes)
-                    except FileNotFoundError:
-                        print(f"Arquivo '{caminho_imagem}' não encontrado.")
-                    except OSError as e:
-                        print(f"Erro ao processar a imagem: {e}")
-                
-                case 10:
                     print("\nIniciando CRUD Automático...")
                     crud(con)
 
