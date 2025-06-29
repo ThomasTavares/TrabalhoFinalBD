@@ -385,6 +385,83 @@ def get_schema_info(conexao):
     return schema
 
 
+def make_query(conexao, sql_query):
+    """Executa consulta SQL e exibe resultados formatados com melhor tratamento de erros."""
+    cursor = conexao.cursor()
+    
+    try:
+        print(f"\nExecutando consulta: {sql_query}")
+        cursor.execute(sql_query)
+        resultados = cursor.fetchall()
+        
+        if cursor.description:  # Para queries que retornam dados
+            colunas = [desc[0] for desc in cursor.description]
+            
+            if resultados:
+                print(f"\nResultados encontrados: {len(resultados)} registro(s)")
+                print("─" * 60)
+                
+                # Exibe cabeçalho
+                header = " | ".join([f"{col:15}" for col in colunas])
+                print(f"│ {header} │")
+                print("─" * 60)
+                
+                # Exibe dados (limita a 20 registros para não sobrecarregar)
+                for i, linha in enumerate(resultados[:20], 1):
+                    valores = []
+                    for j, valor in enumerate(linha):
+                        if isinstance(valor, bytes):
+                            valores.append(f"<BLOB:{len(valor)}b>")
+                        elif valor is None:
+                            valores.append("NULL")
+                        else:
+                            valores.append(str(valor)[:15])
+                    
+                    linha_formatada = " | ".join([f"{val:15}" for val in valores])
+                    print(f"│ {linha_formatada} │")
+                
+                if len(resultados) > 20:
+                    print(f"... e mais {len(resultados) - 20} registros (limitado a 20 para visualização)")
+                
+                print("─" * 60)
+            else:
+                print("Nenhum resultado encontrado para a consulta.")
+                print("\nDicas:")
+                print("   - Verifique se os dados existem nas tabelas")
+                print("   - Tente usar termos mais genéricos na busca")
+                print("   - Verifique a ortografia dos nomes")
+        else:
+            # Para queries que não retornam dados (INSERT, UPDATE, DELETE)
+            print("Consulta executada com sucesso.")
+            
+    except mysql.connector.Error as err:
+        print(f"Erro na execução da query: {err}")
+        
+        # Fornece dicas específicas baseado no tipo de erro
+        codigo_erro = err.errno
+        if codigo_erro == 1054:  # Unknown column
+            print("\nPossíveis soluções:")
+            print("   - Verifique se o nome da coluna está correto")
+            print("   - Use aliases de tabela se houver ambiguidade (ex: t1.Nome)")
+            print("   - Confirme se a coluna existe na tabela especificada")
+        elif codigo_erro == 1146:  # Table doesn't exist
+            print("\nPossíveis soluções:")
+            print("   - Verifique se o nome da tabela está correto")
+            print("   - Confirme se a tabela foi criada no banco de dados")
+        elif codigo_erro == 1064:  # SQL syntax error
+            print("\nPossíveis soluções:")
+            print("   - Verifique a sintaxe SQL")
+            print("   - Use aspas simples para strings")
+            print("   - Confirme os JOINs e relacionamentos")
+        else:
+            print("\Tente reformular a consulta ou verifique a estrutura do banco.")
+            
+    except Exception as e:
+        print(f"❌ Erro inesperado: {e}")
+    finally:
+        cursor.close()
+
+
 def exit_db(conexao):
     """
     Encerra a conexão com o banco de dados.

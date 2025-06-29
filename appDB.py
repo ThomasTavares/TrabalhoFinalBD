@@ -2,9 +2,9 @@
 # Se possível usar VENV (virtualenv) para isolar as dependências do projeto
 # Mude os dados da conexão com o MySQL (para usar o banco de dados local)
 
-from db_operations import connect_mysql, create_tables, drop_tables, show_tables, exit_db, get_schema_info
+from db_operations import connect_mysql, create_tables, drop_tables, show_tables, exit_db, get_schema_info, make_query
 from manual_user import insert_by_user, update_by_user, delete_by_user
-from ia_integration import  populate_all_tables, generate_sql_query, make_query
+from ia_integration import  populate_all_tables, generate_sql_query
 import mysql.connector
 
 def crud(conexao):
@@ -109,7 +109,7 @@ if __name__ == "__main__":
                     prompt_usuario = input("Digite sua consulta em linguagem natural: ").strip()
                     if prompt_usuario:
                         db_schema = get_schema_info(con)
-                        query = generate_sql_query(prompt_usuario, db_schema)
+                        query = generate_sql_query(prompt_usuario, db_schema, conexao=con)
                         if query:
                             print(f"Query gerada: {query}")
                             make_query(con, query)
