@@ -1,4 +1,5 @@
 from transformers import CLIPProcessor, CLIPModel
+import mysql.connector
 import torch
 import openai
 import requests

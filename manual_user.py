@@ -1,5 +1,7 @@
 from db_operations import print_tables, show_table, insert_data
 import mysql.connector
+import re
+from datetime import datetime
 
 def insert_by_user(conexao):
     """
@@ -86,7 +88,6 @@ def insert_by_user(conexao):
     # Insere os dados
     try:
         insert_data(conexao, tabela_nome, colunas, [tuple(valores)])
-        print("Dados inseridos com sucesso!")
     except (mysql.connector.Error, ValueError) as e:
         print(f"Inserção falhou: {e}")
     finally:
@@ -179,7 +180,7 @@ def format_check(resultado, campo=None):
     Retorna:
         None.
     '''
-    check = resultado[1] if isinstance(resultado, tuple) else resultado
+    check = (resultado[1] if isinstance(resultado, tuple) else resultado).replace("\\'", "'")
     match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check, re.IGNORECASE)
     
     if match:
