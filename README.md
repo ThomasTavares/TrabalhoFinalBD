@@ -188,7 +188,7 @@ CREATE TABLE Registro_de_Uso (
 Foi desenvolvida uma aplicação na linguagem Python (arquivo "appDB.py"). Para iniciar o código, é necessário a instalação de algumas bibliotecas adicionais pelo comando:
 
 ```
-pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable
+pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable matplotlib
 ```
 
 ## Conclusão
