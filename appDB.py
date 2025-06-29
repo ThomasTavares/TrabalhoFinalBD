@@ -2,39 +2,10 @@
 # Se possível usar VENV (virtualenv) para isolar as dependências do projeto
 # Mude os dados da conexão com o MySQL (para usar o banco de dados local)
 
-from db_operations import connect_mysql, create_tables, drop_tables, show_tables, exit_db, get_schema_info
+from db_operations import connect_mysql, create_tables, drop_tables, show_tables, query_by_user, exit_db, get_schema_info
 from manual_user import insert_by_user, update_by_user, delete_by_user
 from ia_integration import  populate_all_tables, generate_sql_query, make_query
 import mysql.connector
-
-def crud(conexao):
-    # Exemplo de CRUD completo usando as funções já implementadas
-    
-    # 1. Deletar todas as tabelas (limpa o banco)
-    print("\n[CRUD] Deletando todas as tabelas...")
-    drop_tables(conexao)
-
-    # 2. Criar todas as tabelas a partir do arquivo script.sql
-    print("\n[CRUD] Criando tabelas a partir de 'script.sql'...")
-    create_tables(conexao)
-
-    # 3. Popular todas as tabelas automaticamente com dados gerados por IA
-    print("\n[CRUD] Populando tabelas automaticamente...")
-    populate_all_tables(conexao, n_linhas=10)
-
-    # 4. Mostrar dados de todas as tabelas
-    print("\n[CRUD] Exibindo dados de todas as tabelas:")
-    schema = get_schema_info(conexao)
-    for tabela_nome in schema:
-        print(f"\n--- {tabela_nome.upper()} ---")
-        cursor = conexao.cursor()
-        cursor.execute(f"SELECT * FROM `{tabela_nome}`")
-        linhas = cursor.fetchall()
-        for linha in linhas:
-            print(linha)
-        cursor.close()
-
-    print("\n[CRUD] CRUD automatizado finalizado.")
 
 
 if __name__ == "__main__":
@@ -48,20 +19,20 @@ if __name__ == "__main__":
 
         while True:
             print("""
-╔═════════════════════════════════════════════╗
-║             NEXUS-BIO CMD v1.4              ║
-║---------------------------------------------║
-║ [  1 ] > Criar Tabelas                      ║
-║ [  2 ] > Apagar Tabelas                     ║
-║ [  3 ] > Visualizar Tabelas                 ║
-║ [  4 ] > Inserir Dados Manualmente          ║
-║ [  5 ] > Atualizar Dados Manualmente        ║
-║ [  6 ] > Deletar Dados Manualmente          ║
-║ [  7 ] > IA: Preencher Tabelas              ║
-║ [  8 ] > IA: Gerar SQL a partir de Texto    ║
-║ [  9 ] > Executar CRUD Automático           ║
-║ [  0 ] > Explodir Sistema                   ║
-╚═════════════════════════════════════════════╝
+╔════════════════════════════════════════════╗
+║            NEXUS-BIO CMD v1.4              ║
+║--------------------------------------------║
+║ [ 1 ] > Criar Tabelas                      ║
+║ [ 2 ] > Apagar Tabelas                     ║
+║ [ 3 ] > Visualizar Tabelas                 ║
+║ [ 4 ] > Consultar Tabelas                  ║
+║ [ 5 ] > Inserir Dados Manualmente          ║
+║ [ 6 ] > Atualizar Dados Manualmente        ║
+║ [ 7 ] > Deletar Dados Manualmente          ║
+║ [ 8 ] > IA: Preencher Tabelas              ║
+║ [ 9 ] > IA: Gerar SQL a partir de Texto    ║
+║ [ 0 ] > Explodir Sistema                   ║
+╚════════════════════════════════════════════╝
 """)
 
             try:
@@ -88,24 +59,27 @@ if __name__ == "__main__":
                     
                 case 3:
                     show_tables(con)
-
+                    
                 case 4:
-                    insert_by_user(con)
+                    query_by_user(con)
+                    print("\n" + "="*50)
 
                 case 5:
-                    update_by_user(con)
+                    insert_by_user(con)
 
                 case 6:
-                    delete_by_user(con)
+                    update_by_user(con)
 
                 case 7:
-                    n_linhas = input("Quantas linhas por tabela? [padrão=10]: ").strip()
-                    n_linhas = int(n_linhas) if n_linhas.isdigit() and int(n_linhas) > 0 else 10
-                    n_esp = input("Quantas espécies? [padrão=5]: ").strip()
-                    n_esp = int(n_esp) if n_esp.isdigit() and int(n_esp) > 0 else 100
-                    populate_all_tables(con, n_linhas=n_linhas, n_especies=n_esp)
+                    delete_by_user(con)
 
                 case 8:
+                    n_linhas = input("Quantas linhas por tabela? [padrão=10]: ").strip()
+                    n_linhas = int(n_linhas) if n_linhas.isdigit() and int(n_linhas) > 0 else 10
+                    n_esp = n_linhas
+                    populate_all_tables(con, n_linhas=n_linhas, n_especies=n_esp)
+
+                case 9:
                     prompt_usuario = input("Digite sua consulta em linguagem natural: ").strip()
                     if prompt_usuario:
                         db_schema = get_schema_info(con)
@@ -115,11 +89,7 @@ if __name__ == "__main__":
                             make_query(con, query)
                         else:
                             print("Erro: não foi possível gerar a query SQL")
-
-                case 9:
-                    print("\nIniciando CRUD Automático...")
-                    crud(con)
-
+                
                 case _:
                     print("Opção inválida. Tente novamente.")
 

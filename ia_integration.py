@@ -14,6 +14,7 @@ from db_operations import insert_data_from_json, get_schema_info
 def get_openai_key():
     """Obtém a chave de API da OpenAI do arquivo de configuração."""
     api_key_file = "/home/samuks369/Downloads/gpt-key.txt"
+    # api_key_file = "C:\\Users\\thoma\\Documents\\GitHub\\openai_key.txt"
     
     try:
         with open(api_key_file, "r", encoding="utf-8") as f:

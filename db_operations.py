@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import errorcode
 from prettytable import PrettyTable
+import matplotlib.pyplot as plt
 import re
 
 
@@ -359,6 +360,144 @@ def show_tables(conexao):
     print("\n" + "="*50)
 
 
+def run_query(conexao, query, params=None):
+    """
+    Executa uma consulta SQL no banco de dados e exibe os resultados formatados.
+    Parâmetros:
+        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
+        query (str): Consulta SQL a ser executada.
+        params (tuple, opcional): Parâmetros para a consulta SQL, se necessário.
+    Retorna:
+        resultados (list): Lista de tuplas contendo os resultados da consulta.
+    """
+    cursor = conexao.cursor()
+    try:
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+            
+        resultados = cursor.fetchall()
+        
+        if resultados:
+            tabela_formatada = PrettyTable()
+            tabela_formatada.field_names = [col[0] for col in cursor.description]
+            for linha in resultados:
+                tabela_formatada.add_row(linha)
+            print("\nResultados da Consulta:")
+            print(tabela_formatada)
+            
+    except mysql.connector.Error as err:
+        print(f"Erro ao executar a consulta: {err}")
+        
+    finally:
+        cursor.close()
+        return resultados
+
+
+def plot_results(resultados):
+    """
+    Plota os resultados de uma consulta SQL usando matplotlib.
+    Parâmetros:
+        resultados (list): Lista de tuplas contendo os resultados da consulta.
+    Retorna:
+        None
+    """
+    try:
+        categorias, qntdes = zip(*[(col[1], col[2]) for col in resultados])
+    except ValueError:
+        print("Resultados inválidos para plotagem.")
+        return
+
+    qntdes = [float(q) for q in qntdes]
+
+    plt.barh(categorias, qntdes, color='skyblue')
+    plt.ylabel('Categorias')
+    plt.xlabel('Quantidade')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    for i, (cat, count) in enumerate(zip(categorias, qntdes)):
+        plt.text(count - 0.5, i, str(count), va='center', ha='right', fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def query_by_user(conexao):
+    """
+    Permite ao usuário executar uma das consultas SQL disponíveis.
+    Parâmetros:
+        conexao (mysql.connector.connection.MySQLConnection): Conexão ativa com o banco de dados MySQL.
+    Retorna:
+        None
+    """
+    print("\n" + "="*50)
+    
+    opcao = input("""\nConsultas disponíveis:
+
+[ 1 ] > Quantidade de Funcionários com Contratos Ativos (por Projeto)
+[ 2 ] > Quantidade de Usos de Equipamentos (por Laboratório)
+[ 3 ] > Valor Médio de Financiamento (por Projeto)
+[ 0 ] > Voltar ao Menu Principal
+
+Opção: """).strip()
+
+    if opcao == '1':
+        data_ini = None
+        data_fim = None
+        query = """
+        SELECT  p.ID_Proj, p.Nome, COUNT(*) AS Quantidade
+        FROM    Projeto AS p, Proj_Func AS pf, Funcionario AS f, Contrato AS c
+        WHERE   p.ID_Proj = pf.ID_Proj AND pf.ID_Func = f.ID_Func AND
+                f.ID_Func = c.ID_Func AND c.Status = 'Ativo'
+        GROUP BY 1,2
+        ORDER BY 1;
+            """   
+    elif opcao == '2' or opcao == '3': 
+        try:
+            data_ini = input("\nDigite a data inicial (YYYY-MM-DD) da consulta: ").strip()
+            data_fim = input("Digite a data final (YYYY-MM-DD) da consulta: ").strip()
+        except ValueError:
+            print("Data inválida. Por favor, digite no formato YYYY-MM-DD.")
+            return
+        if opcao == 2:
+            query = """
+            SELECT  l.ID_Lab, l.Nome, COUNT(*) AS Quantidade
+            FROM    Laboratorio AS l, Equipamento AS e, Registro_de_Uso AS r
+            WHERE   l.ID_Lab = e.ID_Lab AND e.ID_Equip = r.ID_Equip AND
+                    r.Dt_Reg BETWEEN %s AND %s
+            GROUP BY 1,2
+            ORDER BY 1;
+            """
+        else:  # opcao == 3
+            query = """
+            SELECT  p.ID_Proj, p.Nome, ROUND(AVG(f.Valor), 2) AS Media
+            FROM    Financiamento AS f, Projeto AS p, Artigo AS a
+            WHERE   f.ID_Proj = p.ID_Proj AND p.ID_Proj = a.ID_Proj AND
+                    a.Dt_Pub BETWEEN %s AND %s
+            GROUP BY 1,2
+            ORDER BY 1;
+            """    
+    elif opcao == 0:
+        return
+    else:
+        print("Opção inválida. Por favor, escolha uma opção válida.")
+        return
+    
+    try:
+        if data_ini and data_fim:
+            params = (data_ini, data_fim)
+            resultados = run_query(conexao, query, params)
+        else:
+            resultados = run_query(conexao, query)
+        if resultados:
+            print("\nGráfico gerado na nova janela.")
+            plot_results(resultados)
+            return
+    except mysql.connector.Error as err:
+        print(f"Erro ao executar a consulta: {err}")
+
+
 def get_schema_info(conexao):
     """
     Obtém informações do schema de todas as tabelas do banco de dados.
@@ -402,5 +541,3 @@ def exit_db(conexao):
             print("A conexão já estava encerrada.")
     except mysql.connector.Error as err:
         print(f"Erro ao encerrar a conexão: {err}")
-
-
