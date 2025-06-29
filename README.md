@@ -2,8 +2,8 @@
 Este projeto, elaborado para a disciplina de Banco de Dados na UFSC, tem como objetivo o desenvolvimento de um modelo de banco de dados e uma aplicação que integre inteligência artificial.
 
 ## Autores
-- Samuel Alves de Oliveira Rovida (23102572)
-- Thomas Tavares Tomaz (23102571)
+- Samuel Alves de Oliveira Rovida
+- Thomas Tavares Tomaz
 
 ## Introdução
 A fim de gerenciar um laboratório de taxonomia, foi desenvolvido um projeto de banco de dados com tabelas referentes aos pesquisadores, às amostras biológicas, aos espécimes vivos, aos equipamentos do laboratório, aos projetos de pesquisa e à classificação taxonômica das espécies.
