@@ -2026,7 +2026,7 @@ def format_check(resultado, campo=None):
     Retorna:
         None.
     '''
-    check = resultado[1] if isinstance(resultado, tuple) else resultado
+    check = (resultado[1] if isinstance(resultado, tuple) else resultado).replace("\\'", "'")
     match = re.search(r"`(\w+)`\s+in\s*\((.*?)\)", check, re.IGNORECASE)
     
     if match:
@@ -2040,7 +2040,7 @@ def format_check(resultado, campo=None):
         print(f"\nValores permitidos para '{atributo}': {', '.join(valores_formatados)}")
 
 
-def check_ckeck(conexao, tabela, campo=None):
+def check_check(conexao, tabela, campo=None):
     '''
     Verifica se a tabela possui CHECK constraints
     Parâmetros:
@@ -2180,7 +2180,7 @@ def insert_by_user(conexao):
         status_str = f" [{', '.join(status)}]" if status else ""
         print(f"\t• {nome_col}: {tipo_col}{status_str}")
     
-    check_ckeck(conexao, tabela_nome)
+    check_check(conexao, tabela_nome)
     
     # Exibe valores já registrados na tabela
     print("\nValores registrados:")
@@ -2216,7 +2216,6 @@ def insert_by_user(conexao):
     # Insere os dados
     try:
         insert_data(conexao, tabela_nome, colunas, [tuple(valores)])
-        print("Dados inseridos com sucesso!")
     except (mysql.connector.Error, ValueError) as e:
         print(f"Inserção falhou: {e}")
     finally:
@@ -2367,7 +2366,7 @@ def update_by_user(conexao):
     campo = input("\nCampo a atualizar: ").strip()
     
     print("\n")
-    check_ckeck(conexao, tabela_nome, campo)
+    check_check(conexao, tabela_nome, campo)
     
     cursor.execute(f"DESCRIBE `{tabela_nome}`")
     colunas_detalhadas = cursor.fetchall()
