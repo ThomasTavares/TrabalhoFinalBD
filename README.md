@@ -183,3 +183,17 @@ CREATE TABLE Registro_de_Uso (
 	FOREIGN KEY(ID_Func) REFERENCES Funcionario (ID_Func),
 	FOREIGN KEY(ID_Equip) REFERENCES Equipamento (ID_Equip));
 ```
+
+## Aplicação
+Foi desenvolvida uma aplicação na linguagem Python (arquivo "appDB.py"). Para iniciar o código, é necessário a instalação de algumas bibliotecas adicionais pelo comando:
+
+```
+pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable
+```
+
+## Conclusão
+O desenvolvimento deste projeto proporcionou uma visão abrangente sobre a modelagem, implementação e aplicação prática de um sistema de banco de dados voltado à gestão de um laboratório de taxonomia. Desde a definição dos requisitos até a elaboração dos modelos conceitual e lógico, foi possível estruturar um sistema capaz de lidar com diversas entidades e relacionamentos pertinentes à realidade científica.
+
+A criação dos scripts DDL e DML permitiu a construção e a manipulação efetiva das tabelas, viabilizando consultas relevantes para a análise de dados, como o uso de equipamentos, contratos de funcionários e financiamentos vinculados à produção científica. A integração com uma aplicação em Python agregou valor ao projeto ao facilitar a inserção e a consulta de dados por parte dos usuários.
+
+Por fim, o trabalho evidenciou a importância de um banco de dados bem estruturado para a organização e análise de informações em ambientes científicos, oferecendo uma base sólida para futuras expansões e melhorias, como o uso de interfaces gráficas e a inclusão de recursos analíticos mais avançados.
