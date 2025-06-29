@@ -194,6 +194,6 @@ pip install mysql-connector-python openai pillow transformers torch scikit-learn
 ## Conclusão
 O desenvolvimento deste projeto proporcionou uma visão abrangente sobre a modelagem, implementação e aplicação prática de um sistema de banco de dados voltado à gestão de um laboratório de taxonomia. Desde a definição dos requisitos até a elaboração dos modelos conceitual e lógico, foi possível estruturar um sistema capaz de lidar com diversas entidades e relacionamentos pertinentes à realidade científica.
 
-A criação dos _scripts_ DDL e DML permitiu a construção e a manipulação efetiva das tabelas, viabilizando consultas relevantes para a análise de dados, como o uso de equipamentos, contratos de funcionários e financiamentos vinculados à produção científica. A integração com uma aplicação em Python agregou valor ao projeto ao facilitar a inserção e a consulta de dados por parte dos usuários.
+A integração com uma aplicação em Python agregou valor ao projeto ao facilitar a inserção e a consulta de dados por parte dos usuários.
 
 Por fim, o trabalho evidenciou a importância de um banco de dados bem estruturado para a organização e análise de informações em ambientes científicos, oferecendo uma base sólida para futuras expansões e melhorias, como o uso de interfaces gráficas e a inclusão de recursos analíticos mais avançados.
