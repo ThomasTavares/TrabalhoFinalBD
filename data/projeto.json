@@ -1,0 +1,84 @@
+{
+    "registros": [
+    {
+      "ID_Proj": 1,
+      "Nome": "Biodiversidade Microbiana da Amazônia",
+      "Descricao": "Estudo de bactérias em ecossistemas amazônicos",
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-01-10",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 2,
+      "Nome": "Primatas da África Central",
+      "Descricao": "Monitoramento de populações de grandes primatas",
+      "Status": "Ativo",
+      "Dt_Inicio": "2022-08-20",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 3,
+      "Nome": "Conservação de Felinos Ameaçados",
+      "Descricao": "Pesquisa sobre ecologia de felinos em biomas diversos",
+      "Status": "Encerrado",
+      "Dt_Inicio": "2021-03-15",
+      "Dt_Fim": "2023-09-30"
+    },
+    {
+      "ID_Proj": 4,
+      "Nome": "Avifauna Neotropical",
+      "Descricao": "Estudo de espécies de aves da Mata Atlântica",
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-07-01",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 5,
+      "Nome": "Microorganismos Endêmicos de Madagascar",
+      "Descricao": "Catalogação de espécies microbianas únicas",
+      "Status": "Planejado",
+      "Dt_Inicio": null,
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 6,
+      "Nome": "Flora do Pantanal",
+      "Descricao": "Identificação de espécies vegetais do bioma pantaneiro",
+      "Status": "Ativo",
+      "Dt_Inicio": "2022-11-10",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 7,
+      "Nome": "Ecologia de Fungos Comestíveis",
+      "Descricao": "Estudo de espécies de cogumelos em florestas temperadas",
+      "Status": "Suspenso",
+      "Dt_Inicio": "2021-05-20",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 8,
+      "Nome": "Adaptação de Espécies Boreal",
+      "Descricao": "Pesquisa sobre adaptação animal às mudanças climáticas",
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-04-05",
+      "Dt_Fim": null
+    },
+    {
+      "ID_Proj": 9,
+      "Nome": "Protótistas de Água Doce",
+      "Descricao": "Estudo de microorganismos em ecossistemas aquáticos",
+      "Status": "Cancelado",
+      "Dt_Inicio": "2022-02-15",
+      "Dt_Fim": "2022-08-10"
+    },
+    {
+      "ID_Proj": 10,
+      "Nome": "Biodiversidade da Grande Barreira de Coral",
+      "Descricao": "Monitoramento de espécies marinhas e costeiras",
+      "Status": "Ativo",
+      "Dt_Inicio": "2020-09-01",
+      "Dt_Fim": null
+    }
+  ]
+}

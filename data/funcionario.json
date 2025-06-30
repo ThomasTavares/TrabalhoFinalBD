@@ -1,0 +1,64 @@
+{
+    "registros": [
+    {
+      "ID_Func": 1,
+      "Nome": "João Carlos da Silva",
+      "CPF": "12345678901",
+      "Cargo": "Auxiliar de Limpeza"
+    },
+    {
+      "ID_Func": 2,
+      "Nome": "Maria Fernanda Oliveira",
+      "CPF": "23456789012",
+      "Cargo": "Técnica de Laboratório"
+    },
+    {
+      "ID_Func": 3,
+      "Nome": "Pedro Henrique Souza",
+      "CPF": "34567890123",
+      "Cargo": "Pesquisador Associado"
+    },
+    {
+      "ID_Func": 4,
+      "Nome": "Ana Lúcia Mendes",
+      "CPF": "45678901234",
+      "Cargo": "Coordenadora de Pesquisa"
+    },
+    {
+      "ID_Func": 5,
+      "Nome": "Carlos Eduardo Rocha",
+      "CPF": "56789012345",
+      "Cargo": "Auxiliar de Manutenção"
+    },
+    {
+      "ID_Func": 6,
+      "Nome": "Juliana Santos Costa",
+      "CPF": "67890123456",
+      "Cargo": "Bióloga Responsável"
+    },
+    {
+      "ID_Func": 7,
+      "Nome": "Roberto Almeida Pereira",
+      "CPF": "78901234567",
+      "Cargo": "Zelador"
+    },
+    {
+      "ID_Func": 8,
+      "Nome": "Fernanda Beatriz Lima",
+      "CPF": "89012345678",
+      "Cargo": "Técnica em Microbiologia"
+    },
+    {
+      "ID_Func": 9,
+      "Nome": "Ricardo Augusto Ferreira",
+      "CPF": "90123456789",
+      "Cargo": "Supervisor de Limpeza"
+    },
+    {
+      "ID_Func": 10,
+      "Nome": "Patrícia Gomes Martins",
+      "CPF": "01234567890",
+      "Cargo": "Coordenadora de Laboratório"
+    }
+  ]
+}

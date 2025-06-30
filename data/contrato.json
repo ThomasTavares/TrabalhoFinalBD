@@ -1,0 +1,148 @@
+{
+    "registros": [
+    {
+      "ID_Contrato": 1,
+      "ID_Func": 2,
+      "ID_Lab": 3,
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-01-15",
+      "Dt_Fim": null,
+      "Valor": 7850.00
+    },
+    {
+      "ID_Contrato": 2,
+      "ID_Func": 3,
+      "ID_Lab": 5,
+      "Status": "Ativo",
+      "Dt_Inicio": "2022-09-10",
+      "Dt_Fim": null,
+      "Valor": 9200.00
+    },
+    {
+      "ID_Contrato": 3,
+      "ID_Func": 4,
+      "ID_Lab": 1,
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-03-01",
+      "Dt_Fim": null,
+      "Valor": 10500.00
+    },
+    {
+      "ID_Contrato": 4,
+      "ID_Func": 6,
+      "ID_Lab": 9,
+      "Status": "Ativo",
+      "Dt_Inicio": "2022-11-20",
+      "Dt_Fim": null,
+      "Valor": 8800.00
+    },
+    {
+      "ID_Contrato": 5,
+      "ID_Func": 8,
+      "ID_Lab": 2,
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-02-15",
+      "Dt_Fim": null,
+      "Valor": 7600.00
+    },
+    {
+      "ID_Contrato": 6,
+      "ID_Func": 10,
+      "ID_Lab": 10,
+      "Status": "Ativo",
+      "Dt_Inicio": "2023-04-10",
+      "Dt_Fim": null,
+      "Valor": 9500.00
+    },
+    {
+      "ID_Contrato": 7,
+      "ID_Func": 2,
+      "ID_Lab": 8,
+      "Status": "Encerrado",
+      "Dt_Inicio": "2021-05-10",
+      "Dt_Fim": "2022-12-31",
+      "Valor": 6800.00
+    },
+    {
+      "ID_Contrato": 8,
+      "ID_Func": 3,
+      "ID_Lab": 4,
+      "Status": "Encerrado",
+      "Dt_Inicio": "2020-08-15",
+      "Dt_Fim": "2022-08-14",
+      "Valor": 7200.00
+    },
+    {
+      "ID_Contrato": 9,
+      "ID_Func": 4,
+      "ID_Lab": 6,
+      "Status": "Encerrado",
+      "Dt_Inicio": "2021-03-01",
+      "Dt_Fim": "2023-02-28",
+      "Valor": 8900.00
+    },
+    {
+      "ID_Contrato": 10,
+      "ID_Func": 6,
+      "ID_Lab": 7,
+      "Status": "Encerrado",
+      "Dt_Inicio": "2022-01-10",
+      "Dt_Fim": "2022-11-15",
+      "Valor": 8100.00
+    },
+    {
+      "ID_Contrato": 11,
+      "ID_Func": 8,
+      "ID_Lab": 4,
+      "Status": "Cancelado",
+      "Dt_Inicio": "2022-06-01",
+      "Dt_Fim": "2022-09-30",
+      "Valor": 7400.00
+    },
+    {
+      "ID_Contrato": 12,
+      "ID_Func": 10,
+      "ID_Lab": 3,
+      "Status": "Cancelado",
+      "Dt_Inicio": "2021-10-15",
+      "Dt_Fim": "2022-03-20",
+      "Valor": 8300.00
+    },
+    {
+      "ID_Contrato": 13,
+      "ID_Func": 1,
+      "ID_Lab": 3,
+      "Status": "Suspenso",
+      "Dt_Inicio": "2023-01-10",
+      "Dt_Fim": null,
+      "Valor": 5200.00
+    },
+    {
+      "ID_Contrato": 14,
+      "ID_Func": 5,
+      "ID_Lab": 2,
+      "Status": "Suspenso",
+      "Dt_Inicio": "2022-08-20",
+      "Dt_Fim": null,
+      "Valor": 4800.00
+    },
+    {
+      "ID_Contrato": 15,
+      "ID_Func": 7,
+      "ID_Lab": 5,
+      "Status": "Suspenso",
+      "Dt_Inicio": "2023-03-05",
+      "Dt_Fim": null,
+      "Valor": 5100.00
+    },
+    {
+      "ID_Contrato": 16,
+      "ID_Func": 9,
+      "ID_Lab": 1,
+      "Status": "Suspenso",
+      "Dt_Inicio": "2022-11-15",
+      "Dt_Fim": null,
+      "Valor": 5500.00
+    }
+  ]
+}

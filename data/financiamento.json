@@ -1,0 +1,81 @@
+{
+    "registros": [
+    {
+      "ID_Financiamento": 1,
+      "ID_Proj": 1,
+      "ID_Financiador": 1,
+      "Valor": 25000.00,
+      "Dt_Financ": "2023-02-15"
+    },
+    {
+      "ID_Financiamento": 2,
+      "ID_Proj": 1,
+      "ID_Financiador": 3,
+      "Valor": 18000.00,
+      "Dt_Financ": "2023-03-10"
+    },
+    {
+      "ID_Financiamento": 3,
+      "ID_Proj": 2,
+      "ID_Financiador": 1,
+      "Valor": 32000.00,
+      "Dt_Financ": "2022-09-05"
+    },
+    {
+      "ID_Financiamento": 4,
+      "ID_Proj": 2,
+      "ID_Financiador": 5,
+      "Valor": 15000.00,
+      "Dt_Financ": "2022-10-20"
+    },
+    {
+      "ID_Financiamento": 5,
+      "ID_Proj": 4,
+      "ID_Financiador": 2,
+      "Valor": 17500.00,
+      "Dt_Financ": "2023-07-01"
+    },
+    {
+      "ID_Financiamento": 6,
+      "ID_Proj": 5,
+      "ID_Financiador": 1,
+      "Valor": 21000.00,
+      "Dt_Financ": "2023-12-10"
+    },
+    {
+      "ID_Financiamento": 7,
+      "ID_Proj": 6,
+      "ID_Financiador": 4,
+      "Valor": 29000.00,
+      "Dt_Financ": "2022-11-15"
+    },
+    {
+      "ID_Financiamento": 8,
+      "ID_Proj": 8,
+      "ID_Financiador": 1,
+      "Valor": 19500.00,
+      "Dt_Financ": "2023-04-05"
+    },
+    {
+      "ID_Financiamento": 9,
+      "ID_Proj": 8,
+      "ID_Financiador": 3,
+      "Valor": 12500.00,
+      "Dt_Financ": "2023-05-12"
+    },
+    {
+      "ID_Financiamento": 10,
+      "ID_Proj": 10,
+      "ID_Financiador": 5,
+      "Valor": 41000.00,
+      "Dt_Financ": "2020-10-01"
+    },
+    {
+      "ID_Financiamento": 11,
+      "ID_Proj": 10,
+      "ID_Financiador": 2,
+      "Valor": 9000.00,
+      "Dt_Financ": "2021-03-15"
+    }
+  ]
+}

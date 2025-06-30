@@ -1,0 +1,54 @@
+{
+    "registros": [
+    {
+      "ID_Lab": 1,
+      "Nome": "Lab. de Biodiversidade Amazônica",
+      "Endereco": "Manaus, Amazonas"
+    },
+    {
+      "ID_Lab": 2,
+      "Nome": "Centro de Pesquisas do Pantanal",
+      "Endereco": "Corumbá, Mato Grosso do Sul"
+    },
+    {
+      "ID_Lab": 3,
+      "Nome": "Lab. de Microbiologia Clínica",
+      "Endereco": "São Paulo, São Paulo"
+    },
+    {
+      "ID_Lab": 4,
+      "Nome": "Instituto de Biologia Marinha",
+      "Endereco": "Florianópolis, Santa Catarina"
+    },
+    {
+      "ID_Lab": 5,
+      "Nome": "Centro de Primatologia",
+      "Endereco": "Rio de Janeiro, Rio de Janeiro"
+    },
+    {
+      "ID_Lab": 6,
+      "Nome": "Lab. de Ecologia de Florestas",
+      "Endereco": "Belo Horizonte, Minas Gerais"
+    },
+    {
+      "ID_Lab": 7,
+      "Nome": "Núcleo de Pesquisa em Zoonoses",
+      "Endereco": "Salvador, Bahia"
+    },
+    {
+      "ID_Lab": 8,
+      "Nome": "Lab. de Biotecnologia Vegetal",
+      "Endereco": "Campinas, São Paulo"
+    },
+    {
+      "ID_Lab": 9,
+      "Nome": "Centro de Estudos de Aves",
+      "Endereco": "Curitiba, Paraná"
+    },
+    {
+      "ID_Lab": 10,
+      "Nome": "Lab. de Genética da Conservação",
+      "Endereco": "Porto Alegre, Rio Grande do Sul"
+    }
+  ]
+}

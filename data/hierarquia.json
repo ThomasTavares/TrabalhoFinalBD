@@ -1,0 +1,576 @@
+{
+    "registros": [
+    {
+      "ID_Tax": 130,
+      "ID_TaxTopo": 108
+    },
+    {
+      "ID_Tax": 131,
+      "ID_TaxTopo": 108
+    },
+    {
+      "ID_Tax": 132,
+      "ID_TaxTopo": 108
+    },
+    {
+      "ID_Tax": 133,
+      "ID_TaxTopo": 111
+    },
+    {
+      "ID_Tax": 134,
+      "ID_TaxTopo": 111
+    },
+    {
+      "ID_Tax": 135,
+      "ID_TaxTopo": 111
+    },
+    {
+      "ID_Tax": 136,
+      "ID_TaxTopo": 114
+    },
+    {
+      "ID_Tax": 137,
+      "ID_TaxTopo": 114
+    },
+    {
+      "ID_Tax": 138,
+      "ID_TaxTopo": 117
+    },
+    {
+      "ID_Tax": 139,
+      "ID_TaxTopo": 117
+    },
+    {
+      "ID_Tax": 140,
+      "ID_TaxTopo": 120
+    },
+    {
+      "ID_Tax": 141,
+      "ID_TaxTopo": 120
+    },
+    {
+      "ID_Tax": 142,
+      "ID_TaxTopo": 122
+    },
+    {
+      "ID_Tax": 143,
+      "ID_TaxTopo": 122
+    },
+    {
+      "ID_Tax": 144,
+      "ID_TaxTopo": 124
+    },
+    {
+      "ID_Tax": 145,
+      "ID_TaxTopo": 125
+    },
+    {
+      "ID_Tax": 146,
+      "ID_TaxTopo": 125
+    },
+    {
+      "ID_Tax": 147,
+      "ID_TaxTopo": 127
+    },
+    {
+      "ID_Tax": 148,
+      "ID_TaxTopo": 128
+    },
+    {
+      "ID_Tax": 149,
+      "ID_TaxTopo": 128
+    },
+    {
+      "ID_Tax": 150,
+      "ID_TaxTopo": 128
+    },
+    {
+      "ID_Tax": 108,
+      "ID_TaxTopo": 84
+    },
+    {
+      "ID_Tax": 109,
+      "ID_TaxTopo": 84
+    },
+    {
+      "ID_Tax": 110,
+      "ID_TaxTopo": 84
+    },
+    {
+      "ID_Tax": 111,
+      "ID_TaxTopo": 85
+    },
+    {
+      "ID_Tax": 112,
+      "ID_TaxTopo": 85
+    },
+    {
+      "ID_Tax": 113,
+      "ID_TaxTopo": 85
+    },
+    {
+      "ID_Tax": 114,
+      "ID_TaxTopo": 89
+    },
+    {
+      "ID_Tax": 115,
+      "ID_TaxTopo": 89
+    },
+    {
+      "ID_Tax": 116,
+      "ID_TaxTopo": 89
+    },
+    {
+      "ID_Tax": 117,
+      "ID_TaxTopo": 94
+    },
+    {
+      "ID_Tax": 118,
+      "ID_TaxTopo": 94
+    },
+    {
+      "ID_Tax": 119,
+      "ID_TaxTopo": 94
+    },
+    {
+      "ID_Tax": 120,
+      "ID_TaxTopo": 98
+    },
+    {
+      "ID_Tax": 121,
+      "ID_TaxTopo": 98
+    },
+    {
+      "ID_Tax": 122,
+      "ID_TaxTopo": 100
+    },
+    {
+      "ID_Tax": 123,
+      "ID_TaxTopo": 100
+    },
+    {
+      "ID_Tax": 124,
+      "ID_TaxTopo": 102
+    },
+    {
+      "ID_Tax": 125,
+      "ID_TaxTopo": 103
+    },
+    {
+      "ID_Tax": 126,
+      "ID_TaxTopo": 103
+    },
+    {
+      "ID_Tax": 127,
+      "ID_TaxTopo": 105
+    },
+    {
+      "ID_Tax": 128,
+      "ID_TaxTopo": 106
+    },
+    {
+      "ID_Tax": 129,
+      "ID_TaxTopo": 106
+    },
+    {
+      "ID_Tax": 84,
+      "ID_TaxTopo": 52
+    },
+    {
+      "ID_Tax": 85,
+      "ID_TaxTopo": 52
+    },
+    {
+      "ID_Tax": 86,
+      "ID_TaxTopo": 52
+    },
+    {
+      "ID_Tax": 87,
+      "ID_TaxTopo": 52
+    },
+    {
+      "ID_Tax": 88,
+      "ID_TaxTopo": 52
+    },
+    {
+      "ID_Tax": 89,
+      "ID_TaxTopo": 53
+    },
+    {
+      "ID_Tax": 90,
+      "ID_TaxTopo": 53
+    },
+    {
+      "ID_Tax": 91,
+      "ID_TaxTopo": 53
+    },
+    {
+      "ID_Tax": 92,
+      "ID_TaxTopo": 53
+    },
+    {
+      "ID_Tax": 93,
+      "ID_TaxTopo": 53
+    },
+    {
+      "ID_Tax": 94,
+      "ID_TaxTopo": 57
+    },
+    {
+      "ID_Tax": 95,
+      "ID_TaxTopo": 57
+    },
+    {
+      "ID_Tax": 96,
+      "ID_TaxTopo": 57
+    },
+    {
+      "ID_Tax": 97,
+      "ID_TaxTopo": 57
+    },
+    {
+      "ID_Tax": 98,
+      "ID_TaxTopo": 66
+    },
+    {
+      "ID_Tax": 99,
+      "ID_TaxTopo": 66
+    },
+    {
+      "ID_Tax": 100,
+      "ID_TaxTopo": 69
+    },
+    {
+      "ID_Tax": 101,
+      "ID_TaxTopo": 69
+    },
+    {
+      "ID_Tax": 102,
+      "ID_TaxTopo": 72
+    },
+    {
+      "ID_Tax": 103,
+      "ID_TaxTopo": 75
+    },
+    {
+      "ID_Tax": 104,
+      "ID_TaxTopo": 75
+    },
+    {
+      "ID_Tax": 105,
+      "ID_TaxTopo": 78
+    },
+    {
+      "ID_Tax": 106,
+      "ID_TaxTopo": 80
+    },
+    {
+      "ID_Tax": 107,
+      "ID_TaxTopo": 80
+    },
+    {
+      "ID_Tax": 52,
+      "ID_TaxTopo": 8
+    },
+    {
+      "ID_Tax": 53,
+      "ID_TaxTopo": 8
+    },
+    {
+      "ID_Tax": 54,
+      "ID_TaxTopo": 8
+    },
+    {
+      "ID_Tax": 55,
+      "ID_TaxTopo": 8
+    },
+    {
+      "ID_Tax": 56,
+      "ID_TaxTopo": 8
+    },
+    {
+      "ID_Tax": 57,
+      "ID_TaxTopo": 9
+    },
+    {
+      "ID_Tax": 58,
+      "ID_TaxTopo": 9
+    },
+    {
+      "ID_Tax": 59,
+      "ID_TaxTopo": 9
+    },
+    {
+      "ID_Tax": 60,
+      "ID_TaxTopo": 9
+    },
+    {
+      "ID_Tax": 61,
+      "ID_TaxTopo": 9
+    },
+    {
+      "ID_Tax": 62,
+      "ID_TaxTopo": 10
+    },
+    {
+      "ID_Tax": 63,
+      "ID_TaxTopo": 10
+    },
+    {
+      "ID_Tax": 64,
+      "ID_TaxTopo": 10
+    },
+    {
+      "ID_Tax": 65,
+      "ID_TaxTopo": 10
+    },
+    {
+      "ID_Tax": 66,
+      "ID_TaxTopo": 18
+    },
+    {
+      "ID_Tax": 67,
+      "ID_TaxTopo": 18
+    },
+    {
+      "ID_Tax": 68,
+      "ID_TaxTopo": 18
+    },
+    {
+      "ID_Tax": 69,
+      "ID_TaxTopo": 19
+    },
+    {
+      "ID_Tax": 70,
+      "ID_TaxTopo": 19
+    },
+    {
+      "ID_Tax": 71,
+      "ID_TaxTopo": 20
+    },
+    {
+      "ID_Tax": 72,
+      "ID_TaxTopo": 28
+    },
+    {
+      "ID_Tax": 73,
+      "ID_TaxTopo": 28
+    },
+    {
+      "ID_Tax": 74,
+      "ID_TaxTopo": 28
+    },
+    {
+      "ID_Tax": 75,
+      "ID_TaxTopo": 29
+    },
+    {
+      "ID_Tax": 76,
+      "ID_TaxTopo": 29
+    },
+    {
+      "ID_Tax": 77,
+      "ID_TaxTopo": 29
+    },
+    {
+      "ID_Tax": 78,
+      "ID_TaxTopo": 33
+    },
+    {
+      "ID_Tax": 79,
+      "ID_TaxTopo": 33
+    },
+    {
+      "ID_Tax": 80,
+      "ID_TaxTopo": 41
+    },
+    {
+      "ID_Tax": 81,
+      "ID_TaxTopo": 41
+    },
+    {
+      "ID_Tax": 82,
+      "ID_TaxTopo": 41
+    },
+    {
+      "ID_Tax": 83,
+      "ID_TaxTopo": 41
+    },
+    {
+      "ID_Tax": 8,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 9,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 10,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 11,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 12,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 13,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 14,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 15,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 16,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 17,
+      "ID_TaxTopo": 2
+    },
+    {
+      "ID_Tax": 18,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 19,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 20,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 21,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 22,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 23,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 24,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 25,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 26,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 27,
+      "ID_TaxTopo": 3
+    },
+    {
+      "ID_Tax": 28,
+      "ID_TaxTopo": 4
+    },
+    {
+      "ID_Tax": 29,
+      "ID_TaxTopo": 4
+    },
+    {
+      "ID_Tax": 30,
+      "ID_TaxTopo": 4
+    },
+    {
+      "ID_Tax": 31,
+      "ID_TaxTopo": 4
+    },
+    {
+      "ID_Tax": 32,
+      "ID_TaxTopo": 4
+    },
+    {
+      "ID_Tax": 33,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 34,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 35,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 36,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 37,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 38,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 39,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 40,
+      "ID_TaxTopo": 5
+    },
+    {
+      "ID_Tax": 41,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 42,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 43,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 44,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 45,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 46,
+      "ID_TaxTopo": 6
+    },
+    {
+      "ID_Tax": 47,
+      "ID_TaxTopo": 7
+    },
+    {
+      "ID_Tax": 48,
+      "ID_TaxTopo": 7
+    },
+    {
+      "ID_Tax": 49,
+      "ID_TaxTopo": 7
+    },
+    {
+      "ID_Tax": 50,
+      "ID_TaxTopo": 7
+    },
+    {
+      "ID_Tax": 51,
+      "ID_TaxTopo": 7
+    }
+  ]
+}

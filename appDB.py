@@ -1,8 +1,8 @@
-# pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable
+# pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable matplotlib duckduckgo_search
 # Se possível usar VENV (virtualenv) para isolar as dependências do projeto
 # Mude os dados da conexão com o MySQL (para usar o banco de dados local)
 
-from db_operations import connect_mysql, create_tables, drop_tables, show_tables, exit_db, get_schema_info, make_query, query_by_user
+from db_operations import connect_mysql, create_tables, drop_tables, insert_default_data, show_tables, exit_db, get_schema_info, make_query, query_by_user
 from manual_user import insert_by_user, update_by_user, delete_by_user
 from ia_integration import  populate_all_tables, generate_sql_query
 import mysql.connector
@@ -10,8 +10,8 @@ import mysql.connector
 
 if __name__ == "__main__":
     try:
-        con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
-        # con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
+        # con = connect_mysql(host="localhost", user="usuario", password="Senha_1234", database="teste")
+        con = connect_mysql(host="localhost", user="root", password="mysql", database="trabalho_final")
 
         if not con:
             print("Não foi possível conectar ao banco de dados.")
@@ -19,20 +19,21 @@ if __name__ == "__main__":
 
         while True:
             print("""
-╔════════════════════════════════════════════╗
-║            NEXUS-BIO CMD v1.4              ║
-║--------------------------------------------║
-║ [ 1 ] > Criar Tabelas                      ║
-║ [ 2 ] > Apagar Tabelas                     ║
-║ [ 3 ] > Visualizar Tabelas                 ║
-║ [ 4 ] > Consultar Tabelas                  ║
-║ [ 5 ] > Inserir Dados Manualmente          ║
-║ [ 6 ] > Atualizar Dados Manualmente        ║
-║ [ 7 ] > Deletar Dados Manualmente          ║
-║ [ 8 ] > IA: Preencher Tabelas              ║
-║ [ 9 ] > IA: Gerar SQL a partir de Texto    ║
-║ [ 0 ] > Explodir Sistema                   ║
-╚════════════════════════════════════════════╝
+╔═════════════════════════════════════════════╗
+║             NEXUS-BIO CMD v1.4              ║
+║---------------------------------------------║
+║ [  1 ] > Criar Tabelas                      ║
+║ [  2 ] > Apagar Tabelas                     ║
+║ [  3 ] > Carregar Tabelas                   ║
+║ [  4 ] > Visualizar Tabelas                 ║
+║ [  5 ] > Consultar Tabelas                  ║
+║ [  6 ] > Inserir Dados Manualmente          ║
+║ [  7 ] > Atualizar Dados Manualmente        ║
+║ [  8 ] > Deletar Dados Manualmente          ║
+║ [  9 ] > IA: Preencher Tabelas              ║
+║ [ 10 ] > IA: Gerar SQL a partir de Texto    ║
+║ [  0 ] > Explodir Sistema                   ║
+╚═════════════════════════════════════════════╝
 """)
 
             try:
@@ -58,28 +59,31 @@ if __name__ == "__main__":
                     drop_tables(con)
                     
                 case 3:
-                    show_tables(con)
+                    insert_default_data(con)
                     
                 case 4:
+                    show_tables(con)
+                    
+                case 5:
                     query_by_user(con)
                     print("\n" + "="*50)
 
-                case 5:
+                case 6:
                     insert_by_user(con)
 
-                case 6:
+                case 7:
                     update_by_user(con)
 
-                case 7:
+                case 8:
                     delete_by_user(con)
 
-                case 8:
+                case 9:
                     n_linhas = input("Quantas linhas por tabela? [padrão=10]: ").strip()
                     n_linhas = int(n_linhas) if n_linhas.isdigit() and int(n_linhas) > 0 else 10
                     n_esp = n_linhas
                     populate_all_tables(con, n_linhas=n_linhas, n_especies=n_esp)
 
-                case 9:
+                case 10:
                     prompt_usuario = input("Digite sua consulta em linguagem natural: ").strip()
                     if prompt_usuario:
                         db_schema = get_schema_info(con)

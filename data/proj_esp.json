@@ -1,0 +1,64 @@
+{
+    "registros": [
+    {
+      "ID_Proj": 1,
+      "ID_Esp": 15
+    },
+    {
+      "ID_Proj": 1,
+      "ID_Esp": 11
+    },
+    {
+      "ID_Proj": 1,
+      "ID_Esp": 12
+    },
+    {
+      "ID_Proj": 2,
+      "ID_Esp": 2
+    },
+    {
+      "ID_Proj": 2,
+      "ID_Esp": 3
+    },
+    {
+      "ID_Proj": 4,
+      "ID_Esp": 7
+    },
+    {
+      "ID_Proj": 4,
+      "ID_Esp": 8
+    },
+    {
+      "ID_Proj": 5,
+      "ID_Esp": 16
+    },
+    {
+      "ID_Proj": 5,
+      "ID_Esp": 12
+    },
+    {
+      "ID_Proj": 6,
+      "ID_Esp": 10
+    },
+    {
+      "ID_Proj": 6,
+      "ID_Esp": 11
+    },
+    {
+      "ID_Proj": 8,
+      "ID_Esp": 6
+    },
+    {
+      "ID_Proj": 8,
+      "ID_Esp": 9
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Esp": 8
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Esp": 14
+    }
+  ]
+}

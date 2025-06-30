@@ -1,0 +1,54 @@
+{
+    "registros": [
+    {
+      "ID_Local": 1,
+      "Nome": "Centro de Pesquisa Amazônia",
+      "Endereco": "Brasil, Manaus"
+    },
+    {
+      "ID_Local": 2,
+      "Nome": "Estação Biológica de Boracéia",
+      "Endereco": "Brasil, Salesópolis"
+    },
+    {
+      "ID_Local": 3,
+      "Nome": "Reserva Florestal de Kibale",
+      "Endereco": "Uganda, Fort Portal"
+    },
+    {
+      "ID_Local": 4,
+      "Nome": "Centro de Biodiversidade de Madagascar",
+      "Endereco": "Madagascar, Antananarivo"
+    },
+    {
+      "ID_Local": 5,
+      "Nome": "Estação de Pesquisa da Grande Barreira de Coral",
+      "Endereco": "Austrália, Townsville"
+    },
+    {
+      "ID_Local": 6,
+      "Nome": "Laboratório de Pesquisa Antártica",
+      "Endereco": "Antártida, Estação McMurdo"
+    },
+    {
+      "ID_Local": 7,
+      "Nome": "Centro de Estudos da Mata Atlântica",
+      "Endereco": "Brasil, Rio de Janeiro"
+    },
+    {
+      "ID_Local": 8,
+      "Nome": "Instituto de Pesquisa do Pantanal",
+      "Endereco": "Brasil, Corumbá"
+    },
+    {
+      "ID_Local": 9,
+      "Nome": "Estação Biológica de Doñana",
+      "Endereco": "Espanha, Sevilha"
+    },
+    {
+      "ID_Local": 10,
+      "Nome": "Centro de Pesquisa da Floresta Boreal",
+      "Endereco": "Canadá, Alberta"
+    }
+  ]
+}

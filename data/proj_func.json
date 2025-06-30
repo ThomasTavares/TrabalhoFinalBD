@@ -1,0 +1,68 @@
+{
+    "registros": [
+    {
+      "ID_Proj": 1,
+      "ID_Func": 2
+    },
+    {
+      "ID_Proj": 1,
+      "ID_Func": 4
+    },
+    {
+      "ID_Proj": 1,
+      "ID_Func": 8
+    },
+    {
+      "ID_Proj": 2,
+      "ID_Func": 3
+    },
+    {
+      "ID_Proj": 2,
+      "ID_Func": 6
+    },
+    {
+      "ID_Proj": 4,
+      "ID_Func": 6
+    },
+    {
+      "ID_Proj": 4,
+      "ID_Func": 10
+    },
+    {
+      "ID_Proj": 5,
+      "ID_Func": 2
+    },
+    {
+      "ID_Proj": 5,
+      "ID_Func": 8
+    },
+    {
+      "ID_Proj": 6,
+      "ID_Func": 4
+    },
+    {
+      "ID_Proj": 6,
+      "ID_Func": 6
+    },
+    {
+      "ID_Proj": 8,
+      "ID_Func": 3
+    },
+    {
+      "ID_Proj": 8,
+      "ID_Func": 10
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Func": 4
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Func": 6
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Func": 8
+    }
+  ]
+}

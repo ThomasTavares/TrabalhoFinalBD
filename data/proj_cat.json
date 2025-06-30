@@ -1,0 +1,36 @@
+{
+    "registros": [
+    {
+      "ID_Proj": 1,
+      "ID_Categ": 2
+    },
+    {
+      "ID_Proj": 2,
+      "ID_Categ": 1
+    },
+    {
+      "ID_Proj": 4,
+      "ID_Categ": 3
+    },
+    {
+      "ID_Proj": 5,
+      "ID_Categ": 2
+    },
+    {
+      "ID_Proj": 6,
+      "ID_Categ": 4
+    },
+    {
+      "ID_Proj": 8,
+      "ID_Categ": 5
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Categ": 3
+    },
+    {
+      "ID_Proj": 10,
+      "ID_Categ": 2
+    }
+  ]
+}

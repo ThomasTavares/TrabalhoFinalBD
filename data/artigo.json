@@ -1,0 +1,67 @@
+{
+    "registros": [
+    {
+      "ID_Artigo": 1,
+      "ID_Proj": 1,
+      "Titulo": "Diversidade de Escherichia coli em solos amazônicos",
+      "Resumo": "Este estudo investiga a diversidade genética de cepas de E. coli encontradas em diferentes microhabitats da floresta amazônica, revelando novas linhagens com potencial biotecnológico. Foram analisadas 120 amostras coletadas em áreas preservadas, identificando resistência antimicrobiana e fatores de virulência em cepas ambientais.",
+      "DOI": "10.1016/j.microb.2023.123456",
+      "Link": null,
+      "Dt_Pub": "2023-08-15"
+    },
+    {
+      "ID_Artigo": 2,
+      "ID_Proj": 2,
+      "Titulo": "Padrões de deslocamento de Pan troglodytes em Kibale",
+      "Resumo": "Artigo apresenta dados de 12 meses de monitoramento de comunidades de chimpanzés na Reserva de Kibale, analisando padrões de deslocamento em relação à disponibilidade de recursos alimentares. Os resultados mostram adaptações comportamentais significativas em resposta às mudanças sazonais na floresta.",
+      "DOI": "10.1111/jprimat.2023.654321",
+      "Link": null,
+      "Dt_Pub": "2023-05-22"
+    },
+    {
+      "ID_Artigo": 3,
+      "ID_Proj": 4,
+      "Titulo": "Variação morfológica em Turdus merula na Mata Atlântica",
+      "Resumo": "Estudo comparativo de 50 espécimes de T. merula coletados em diferentes altitudes da Mata Atlântica, revelando clina latitudinal no tamanho corporal e coloração da plumagem. Os dados sugerem processos evolutivos diferenciados em populações isoladas geograficamente.",
+      "DOI": "10.1080/02724634.2023.987654",
+      "Link": null,
+      "Dt_Pub": "2023-11-30"
+    },
+    {
+      "ID_Artigo": 4,
+      "ID_Proj": 6,
+      "Titulo": "Novas espécies de Hypnum no Pantanal brasileiro",
+      "Resumo": "Descrição de três novas espécies de musgos do gênero Hypnum coletadas em áreas alagáveis do Pantanal, com análise de suas adaptações morfológicas a ambientes inundáveis. O estudo inclui dados microestruturais obtidos por microscopia eletrônica.",
+      "DOI": "10.1093/botlinnean/boac098",
+      "Link": null,
+      "Dt_Pub": "2023-09-18"
+    },
+    {
+      "ID_Artigo": 5,
+      "ID_Proj": 8,
+      "Titulo": "Adaptações térmicas em Lynx lynx boreal",
+      "Resumo": "Pesquisa investiga as adaptações fisiológicas de Lynx lynx a temperaturas extremas na floresta boreal canadense, incluindo análise de pelagem, taxa metabólica e padrões de atividade. Os resultados mostram plasticidade fenotípica significativa em resposta ao estresse térmico.",
+      "DOI": "10.1002/ece3.10456",
+      "Link": null,
+      "Dt_Pub": "2024-01-10"
+    },
+    {
+      "ID_Artigo": 6,
+      "ID_Proj": 10,
+      "Titulo": "Ecologia trófica de Myadestes obscurus em recifes",
+      "Resumo": "Estudo pioneiro sobre os hábitos alimentares de M. obscurus em ecossistemas recifais, combinando análise de conteúdo estomacal e observação comportamental. Revela o papel crucial desta ave na dispersão de sementes de plantas costeiras.",
+      "DOI": "10.3354/meps14325",
+      "Link": null,
+      "Dt_Pub": "2023-07-05"
+    },
+    {
+      "ID_Artigo": 7,
+      "ID_Proj": 1,
+      "Titulo": "Potencial biotecnológico de leveduras amazônicas",
+      "Resumo": "Caracterização de novas cepas de Saccharomyces cerevisiae isoladas de frutos amazônicos, com análise de suas propriedades fermentativas e tolerância a estresses. Duas cepas mostraram potencial superior para produção de biocombustíveis.",
+      "DOI": "10.1186/s12934-023-02278-w",
+      "Link": null,
+      "Dt_Pub": "2024-02-28"
+    }
+  ]
+}

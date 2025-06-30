@@ -1,0 +1,109 @@
+{
+    "registros": [
+    {
+      "ID_Amos": 1,
+      "ID_Esp": 0,
+      "ID_Local": 1,
+      "Tipo": "Amostra bacteriana",
+      "Dt_Coleta": "2023-05-15"
+    },
+    {
+      "ID_Amos": 2,
+      "ID_Esp": 1,
+      "ID_Local": 4,
+      "Tipo": "Amostra bacteriana",
+      "Dt_Coleta": "2023-06-20"
+    },
+    {
+      "ID_Amos": 3,
+      "ID_Esp": 2,
+      "ID_Local": 3,
+      "Tipo": "Amostra de tecido",
+      "Dt_Coleta": "2023-02-10"
+    },
+    {
+      "ID_Amos": 4,
+      "ID_Esp": 3,
+      "ID_Local": 3,
+      "Tipo": "Amostra de pelo",
+      "Dt_Coleta": "2023-03-05"
+    },
+    {
+      "ID_Amos": 5,
+      "ID_Esp": 4,
+      "ID_Local": 9,
+      "Tipo": "Amostra de sangue",
+      "Dt_Coleta": "2023-04-18"
+    },
+    {
+      "ID_Amos": 6,
+      "ID_Esp": 5,
+      "ID_Local": 7,
+      "Tipo": "Amostra de pelo",
+      "Dt_Coleta": "2023-01-22"
+    },
+    {
+      "ID_Amos": 7,
+      "ID_Esp": 6,
+      "ID_Local": 10,
+      "Tipo": "Amostra de tecido",
+      "Dt_Coleta": "2023-07-30"
+    },
+    {
+      "ID_Amos": 8,
+      "ID_Esp": 7,
+      "ID_Local": 2,
+      "Tipo": "Amostra de penas",
+      "Dt_Coleta": "2023-08-12"
+    },
+    {
+      "ID_Amos": 9,
+      "ID_Esp": 8,
+      "ID_Local": 5,
+      "Tipo": "Amostra de sangue",
+      "Dt_Coleta": "2023-09-05"
+    },
+    {
+      "ID_Amos": 10,
+      "ID_Esp": 9,
+      "ID_Local": 10,
+      "Tipo": "Amostra de exoesqueleto",
+      "Dt_Coleta": "2023-10-15"
+    },
+    {
+      "ID_Amos": 11,
+      "ID_Esp": 10,
+      "ID_Local": 8,
+      "Tipo": "Amostra vegetal",
+      "Dt_Coleta": "2023-11-03"
+    },
+    {
+      "ID_Amos": 12,
+      "ID_Esp": 11,
+      "ID_Local": 1,
+      "Tipo": "Amostra vegetal",
+      "Dt_Coleta": "2023-12-10"
+    },
+    {
+      "ID_Amos": 13,
+      "ID_Esp": 12,
+      "ID_Local": 4,
+      "Tipo": "Amostra de levedura",
+      "Dt_Coleta": "2024-01-15"
+    },
+    {
+      "ID_Amos": 14,
+      "ID_Esp": 13,
+      "ID_Local": 2,
+      "Tipo": "Amostra de cogumelo",
+      "Dt_Coleta": "2024-02-20"
+    },
+    {
+      "ID_Amos": 15,
+      "ID_Esp": 14,
+      "ID_Local": 7,
+      "Tipo": "Amostra de protista",
+      "Dt_Coleta": "2024-03-25"
+    }
+  ]
+}

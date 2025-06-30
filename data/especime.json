@@ -1,0 +1,79 @@
+{
+    "registros": [
+    {
+      "ID_Especime": 15,
+      "ID_Esp": 15,
+      "Descritivo": "Espécime de Escherichia coli"
+    },
+    {
+      "ID_Especime": 16,
+      "ID_Esp": 16,
+      "Descritivo": "Espécime de Salmonella enterica"
+    },
+    {
+      "ID_Especime": 2,
+      "ID_Esp": 2,
+      "Descritivo": "Espécime de Pan troglodytes"
+    },
+    {
+      "ID_Especime": 3,
+      "ID_Esp": 3,
+      "Descritivo": "Espécime de Gorilla gorilla"
+    },
+    {
+      "ID_Especime": 4,
+      "ID_Esp": 4,
+      "Descritivo": "Espécime de Panthera leo"
+    },
+    {
+      "ID_Especime": 5,
+      "ID_Esp": 5,
+      "Descritivo": "Espécime de Felis catus"
+    },
+    {
+      "ID_Especime": 6,
+      "ID_Esp": 6,
+      "Descritivo": "Espécime de Lynx lynx"
+    },
+    {
+      "ID_Especime": 7,
+      "ID_Esp": 7,
+      "Descritivo": "Espécime de Turdus merula"
+    },
+    {
+      "ID_Especime": 8,
+      "ID_Esp": 8,
+      "Descritivo": "Espécime de Myadestes obscurus"
+    },
+    {
+      "ID_Especime": 9,
+      "ID_Esp": 9,
+      "Descritivo": "Espécime de Carabus nemoralis"
+    },
+    {
+      "ID_Especime": 10,
+      "ID_Esp": 10,
+      "Descritivo": "Espécime de Hypnum cupressiforme"
+    },
+    {
+      "ID_Especime": 11,
+      "ID_Esp": 11,
+      "Descritivo": "Espécime de Marchantia polymorpha"
+    },
+    {
+      "ID_Especime": 12,
+      "ID_Esp": 12,
+      "Descritivo": "Espécime de Saccharomyces cerevisiae"
+    },
+    {
+      "ID_Especime": 13,
+      "ID_Esp": 13,
+      "Descritivo": "Espécime de Agaricus bisporus"
+    },
+    {
+      "ID_Especime": 14,
+      "ID_Esp": 14,
+      "Descritivo": "Espécime de Euglena gracilis"
+    }
+  ]
+}

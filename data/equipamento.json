@@ -1,0 +1,124 @@
+{
+    "registros": [
+    {
+      "ID_Equip": 1,
+      "ID_Lab": 1,
+      "Tipo": "Sequenciador de DNA",
+      "Modelo": "Illumina NovaSeq 6000"
+    },
+    {
+      "ID_Equip": 2,
+      "ID_Lab": 1,
+      "Tipo": "Microscópio Eletrônico",
+      "Modelo": "JEOL JSM-IT500"
+    },
+    {
+      "ID_Equip": 3,
+      "ID_Lab": 2,
+      "Tipo": "Analisador de Água",
+      "Modelo": "YSI EXO2"
+    },
+    {
+      "ID_Equip": 4,
+      "ID_Lab": 2,
+      "Tipo": "Estação Meteorológica",
+      "Modelo": "Davis Vantage Pro2"
+    },
+    {
+      "ID_Equip": 5,
+      "ID_Lab": 3,
+      "Tipo": "Autoclave",
+      "Modelo": "Phoenix Luferco 100L"
+    },
+    {
+      "ID_Equip": 6,
+      "ID_Lab": 3,
+      "Tipo": "Espectrômetro de Massa",
+      "Modelo": "Bruker MALDI-TOF"
+    },
+    {
+      "ID_Equip": 7,
+      "ID_Lab": 4,
+      "Tipo": "Sonda Multiparâmetros",
+      "Modelo": "Sea-Bird SBE 19plus"
+    },
+    {
+      "ID_Equip": 8,
+      "ID_Lab": 4,
+      "Tipo": "Microscópio de Fluorescência",
+      "Modelo": "Olympus BX53"
+    },
+    {
+      "ID_Equip": 9,
+      "ID_Lab": 5,
+      "Tipo": "Colar Telemetria",
+      "Modelo": "Lotek GPS-4400M"
+    },
+    {
+      "ID_Equip": 10,
+      "ID_Lab": 5,
+      "Tipo": "Gravador de Áudio Digital",
+      "Modelo": "Zoom H6"
+    },
+    {
+      "ID_Equip": 11,
+      "ID_Lab": 6,
+      "Tipo": "Dendrômetro Digital",
+      "Modelo": "Criterion RD1000"
+    },
+    {
+      "ID_Equip": 12,
+      "ID_Lab": 6,
+      "Tipo": "DRONe de Monitoramento",
+      "Modelo": "DJI M300 RTK"
+    },
+    {
+      "ID_Equip": 13,
+      "ID_Lab": 7,
+      "Tipo": "Cabine de Segurança Biológica",
+      "Modelo": "ESCO Class II A2"
+    },
+    {
+      "ID_Equip": 14,
+      "ID_Lab": 7,
+      "Tipo": "Real-Time PCR",
+      "Modelo": "Applied Biosystems 7500"
+    },
+    {
+      "ID_Equip": 15,
+      "ID_Lab": 8,
+      "Tipo": "Câmara de Crescimento Vegetal",
+      "Modelo": "Conviron CMP6050"
+    },
+    {
+      "ID_Equip": 16,
+      "ID_Lab": 8,
+      "Tipo": "Cromatógrafo Líquido",
+      "Modelo": "Shimadzu LC-20AT"
+    },
+    {
+      "ID_Equip": 17,
+      "ID_Lab": 9,
+      "Tipo": "Anemômetro Laser",
+      "Modelo": "Testo 480"
+    },
+    {
+      "ID_Equip": 18,
+      "ID_Lab": 9,
+      "Tipo": "Binóculo de Longo Alcance",
+      "Modelo": "Swarovski EL 10x42"
+    },
+    {
+      "ID_Equip": 19,
+      "ID_Lab": 10,
+      "Tipo": "Termociclador",
+      "Modelo": "Bio-Rad T100"
+    },
+    {
+      "ID_Equip": 20,
+      "ID_Lab": 10,
+      "Tipo": "Eletroforese Capilar",
+      "Modelo": "Agilent 2100 Bioanalyzer"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from mysql.connector import errorcode
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 import re
+import json
 
 
 def connect_mysql(host="localhost", user="root", password="", database=None, port=3306):
@@ -138,6 +139,36 @@ def drop_tables(conexao):
 
     except mysql.connector.Error as e:
         print("Erro ao deletar tabelas:", e)
+
+
+def insert_default_data(conexao):
+    ordem_execucao = [
+        # Tabelas base (sem dependências)
+        "taxon", "local_de_coleta", "funcionario", "categoria", 
+        "laboratorio", "financiador", "projeto",
+        
+        # Tabelas com dependências simples
+        "hierarquia", "especie", "equipamento",
+        
+        # Tabelas com dependências múltiplas
+        "especime", "amostra", "artigo", "contrato", "financiamento",
+        
+        # Tabelas de relacionamento
+        "proj_func", "proj_esp", "proj_cat", "registro_de_uso"
+    ]
+    
+    for tabela in ordem_execucao:
+        try:
+            with open(f"data\\{tabela}.json", "r", encoding="utf-8") as file:
+                json_str = file.read()
+                json_dados = json.loads(json_str)  # Convertendo string para dict
+            insert_data_from_json(conexao, tabela, json_dados)
+        except FileNotFoundError:
+            print(f"Arquivo JSON não encontrado.")
+            continue
+        except IOError as e:
+            print(f"Erro ao ler arquivo JSON: {e}")
+            continue
 
 
 def insert_data(conexao, nome_tabela, campos, dados):
@@ -593,7 +624,7 @@ def make_query(conexao, sql_query):
             print("   - Use aspas simples para strings")
             print("   - Confirme os JOINs e relacionamentos")
         else:
-            print("\Tente reformular a consulta ou verifique a estrutura do banco.")
+            print("\nTente reformular a consulta ou verifique a estrutura do banco.")
             
     except Exception as e:
         print(f"❌ Erro inesperado: {e}")

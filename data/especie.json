@@ -1,0 +1,132 @@
+{
+    "registros": [
+    {
+      "ID_Esp": 1,
+      "ID_Gen": 130,
+      "Nome": "Homo sapiens",
+      "Nome_Pop": "Humano",
+      "Descricao": "Espécie de primata pertencente à família Hominidae, caracterizada por postura ereta e cérebro altamente desenvolvido.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 2,
+      "ID_Gen": 131,
+      "Nome": "Pan troglodytes",
+      "Nome_Pop": "Chimpanzé",
+      "Descricao": "Grande primata africano, o parente vivo mais próximo dos humanos.",
+      "IUCN": "EN"
+    },
+    {
+      "ID_Esp": 3,
+      "ID_Gen": 132,
+      "Nome": "Gorilla gorilla",
+      "Nome_Pop": "Gorila-ocidental",
+      "Descricao": "Maior primata vivo, habitante das florestas da África Central.",
+      "IUCN": "CR"
+    },
+    {
+      "ID_Esp": 4,
+      "ID_Gen": 133,
+      "Nome": "Panthera leo",
+      "Nome_Pop": "Leão",
+      "Descricao": "Grande felino social, conhecido como 'rei dos animais'.",
+      "IUCN": "VU"
+    },
+    {
+      "ID_Esp": 5,
+      "ID_Gen": 134,
+      "Nome": "Felis catus",
+      "Nome_Pop": "Gato-doméstico",
+      "Descricao": "Pequeno felino carnívoro, domesticado há milhares de anos.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 6,
+      "ID_Gen": 135,
+      "Nome": "Lynx lynx",
+      "Nome_Pop": "Lince-euroasiático",
+      "Descricao": "Felino de médio porte caracterizado por orelhas pontiagudas com tufos de pelo.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 7,
+      "ID_Gen": 136,
+      "Nome": "Turdus merula",
+      "Nome_Pop": "Melro-preto",
+      "Descricao": "Ave passeriforme comum em jardins e florestas da Europa.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 8,
+      "ID_Gen": 137,
+      "Nome": "Myadestes obscurus",
+      "Nome_Pop": "Sabiá-havaiano",
+      "Descricao": "Ave endêmica do Havaí, ameaçada pela perda de habitat.",
+      "IUCN": "NT"
+    },
+    {
+      "ID_Esp": 9,
+      "ID_Gen": 138,
+      "Nome": "Carabus nemoralis",
+      "Nome_Pop": "Besouro-do-chão",
+      "Descricao": "Besouro predador comum em florestas temperadas.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 10,
+      "ID_Gen": 140,
+      "Nome": "Hypnum cupressiforme",
+      "Nome_Pop": "Musgo-hipno",
+      "Descricao": "Espécie de musgo amplamente distribuída em florestas temperadas.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 11,
+      "ID_Gen": 142,
+      "Nome": "Marchantia polymorpha",
+      "Nome_Pop": "Marchantia",
+      "Descricao": "Hepática comum em locais úmidos e sombreados.",
+      "IUCN": "LC"
+    },
+    {
+      "ID_Esp": 12,
+      "ID_Gen": 144,
+      "Nome": "Saccharomyces cerevisiae",
+      "Nome_Pop": "Levedura-de-cerveja",
+      "Descricao": "Fungo unicelular importante na produção de pão e bebidas alcoólicas.",
+      "IUCN": null
+    },
+    {
+      "ID_Esp": 13,
+      "ID_Gen": 145,
+      "Nome": "Agaricus bisporus",
+      "Nome_Pop": "Champignon",
+      "Descricao": "Cogumelo comestível amplamente cultivado para alimentação.",
+      "IUCN": null
+    },
+    {
+      "ID_Esp": 14,
+      "ID_Gen": 147,
+      "Nome": "Euglena gracilis",
+      "Nome_Pop": "Euglena",
+      "Descricao": "Organismo unicelular flagelado que realiza fotossíntese.",
+      "IUCN": null
+    },
+    {
+      "ID_Esp": 15,
+      "ID_Gen": 148,
+      "Nome": "Escherichia coli",
+      "Nome_Pop": "E. coli",
+      "Descricao": "Bactéria comum no intestino de animais de sangue quente, algumas cepas são patogênicas.",
+      "IUCN": null
+    },
+    {
+      "ID_Esp": 16,
+      "ID_Gen": 149,
+      "Nome": "Salmonella enterica",
+      "Nome_Pop": "Salmonela",
+      "Descricao": "Bactéria que pode causar doenças alimentares em humanos.",
+      "IUCN": null
+    }
+  ]
+}

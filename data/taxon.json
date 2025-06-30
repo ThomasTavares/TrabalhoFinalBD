@@ -1,0 +1,200 @@
+{
+    "registros": [
+    { "ID_Tax": 0, "Tipo": "Dominio", "Nome": "Eukaryota" },
+    { "ID_Tax": 1, "Tipo": "Dominio", "Nome": "Prokaryota" },
+    { "ID_Tax": 2, "Tipo": "Reino", "Nome": "Animalia" },
+    { "ID_Tax": 3, "Tipo": "Reino", "Nome": "Plantae" },
+    { "ID_Tax": 4, "Tipo": "Reino", "Nome": "Fungi" },
+    { "ID_Tax": 5, "Tipo": "Reino", "Nome": "Protista" },
+    { "ID_Tax": 6, "Tipo": "Reino", "Nome": "Bacteria" },
+    { "ID_Tax": 7, "Tipo": "Reino", "Nome": "Archaea" },
+    
+    { "ID_Tax": 8, "Tipo": "Filo", "Nome": "Chordata" },
+    { "ID_Tax": 9, "Tipo": "Filo", "Nome": "Arthropoda" },
+    { "ID_Tax": 10, "Tipo": "Filo", "Nome": "Mollusca" },
+    { "ID_Tax": 11, "Tipo": "Filo", "Nome": "Annelida" },
+    { "ID_Tax": 12, "Tipo": "Filo", "Nome": "Platyhelminthes" },
+    { "ID_Tax": 13, "Tipo": "Filo", "Nome": "Nematoda" },
+    { "ID_Tax": 14, "Tipo": "Filo", "Nome": "Cnidaria" },
+    { "ID_Tax": 15, "Tipo": "Filo", "Nome": "Porifera" },
+    { "ID_Tax": 16, "Tipo": "Filo", "Nome": "Echinodermata" },
+    { "ID_Tax": 17, "Tipo": "Filo", "Nome": "Bryozoa" },
+
+    { "ID_Tax": 18, "Tipo": "Filo", "Nome": "Bryophyta" },
+    { "ID_Tax": 19, "Tipo": "Filo", "Nome": "Marchantiophyta" },
+    { "ID_Tax": 20, "Tipo": "Filo", "Nome": "Anthocerotophyta" },
+    { "ID_Tax": 21, "Tipo": "Filo", "Nome": "Pteridophyta" },
+    { "ID_Tax": 22, "Tipo": "Filo", "Nome": "Lycopodiophyta" },
+    { "ID_Tax": 23, "Tipo": "Filo", "Nome": "Coniferophyta" },
+    { "ID_Tax": 24, "Tipo": "Filo", "Nome": "Cycadophyta" },
+    { "ID_Tax": 25, "Tipo": "Filo", "Nome": "Ginkgophyta" },
+    { "ID_Tax": 26, "Tipo": "Filo", "Nome": "Gnetophyta" },
+    { "ID_Tax": 27, "Tipo": "Filo", "Nome": "Magnoliophyta" },
+
+    { "ID_Tax": 28, "Tipo": "Filo", "Nome": "Ascomycota" },
+    { "ID_Tax": 29, "Tipo": "Filo", "Nome": "Basidiomycota" },
+    { "ID_Tax": 30, "Tipo": "Filo", "Nome": "Zygomycota" },
+    { "ID_Tax": 31, "Tipo": "Filo", "Nome": "Chytridiomycota" },
+    { "ID_Tax": 32, "Tipo": "Filo", "Nome": "Glomeromycota" },
+
+    { "ID_Tax": 33, "Tipo": "Filo", "Nome": "Euglenozoa" },
+    { "ID_Tax": 34, "Tipo": "Filo", "Nome": "Ciliophora" },
+    { "ID_Tax": 35, "Tipo": "Filo", "Nome": "Apicomplexa" },
+    { "ID_Tax": 36, "Tipo": "Filo", "Nome": "Amoebozoa" },
+    { "ID_Tax": 37, "Tipo": "Filo", "Nome": "Chlorophyta" },
+    { "ID_Tax": 38, "Tipo": "Filo", "Nome": "Rhodophyta" },
+    { "ID_Tax": 39, "Tipo": "Filo", "Nome": "Dinoflagellata" },
+    { "ID_Tax": 40, "Tipo": "Filo", "Nome": "Heterokontophyta" },
+
+    { "ID_Tax": 41, "Tipo": "Filo", "Nome": "Proteobacteria" },
+    { "ID_Tax": 42, "Tipo": "Filo", "Nome": "Firmicutes" },
+    { "ID_Tax": 43, "Tipo": "Filo", "Nome": "Actinobacteria" },
+    { "ID_Tax": 44, "Tipo": "Filo", "Nome": "Cyanobacteria" },
+    { "ID_Tax": 45, "Tipo": "Filo", "Nome": "Bacteroidetes" },
+    { "ID_Tax": 46, "Tipo": "Filo", "Nome": "Spirochaetes" },
+
+    { "ID_Tax": 47, "Tipo": "Filo", "Nome": "Euryarchaeota" },
+    { "ID_Tax": 48, "Tipo": "Filo", "Nome": "Crenarchaeota" },
+    { "ID_Tax": 49, "Tipo": "Filo", "Nome": "Korarchaeota" },
+    { "ID_Tax": 50, "Tipo": "Filo", "Nome": "Nanoarchaeota" },
+    { "ID_Tax": 51, "Tipo": "Filo", "Nome": "Thaumarchaeota" },
+
+    { "ID_Tax": 52, "Tipo": "Classe", "Nome": "Mammalia" },
+    { "ID_Tax": 53, "Tipo": "Classe", "Nome": "Aves" },
+    { "ID_Tax": 54, "Tipo": "Classe", "Nome": "Reptilia" },
+    { "ID_Tax": 55, "Tipo": "Classe", "Nome": "Amphibia" },
+    { "ID_Tax": 56, "Tipo": "Classe", "Nome": "Actinopterygii" },
+
+    { "ID_Tax": 57, "Tipo": "Classe", "Nome": "Insecta" },
+    { "ID_Tax": 58, "Tipo": "Classe", "Nome": "Arachnida" },
+    { "ID_Tax": 59, "Tipo": "Classe", "Nome": "Crustacea" },
+    { "ID_Tax": 60, "Tipo": "Classe", "Nome": "Chilopoda" },
+    { "ID_Tax": 61, "Tipo": "Classe", "Nome": "Diplopoda" },
+
+    { "ID_Tax": 62, "Tipo": "Classe", "Nome": "Gastropoda" },
+    { "ID_Tax": 63, "Tipo": "Classe", "Nome": "Bivalvia" },
+    { "ID_Tax": 64, "Tipo": "Classe", "Nome": "Cephalopoda" },
+    { "ID_Tax": 65, "Tipo": "Classe", "Nome": "Polyplacophora" },
+
+    { "ID_Tax": 66, "Tipo": "Classe", "Nome": "Bryopsida" },
+    { "ID_Tax": 67, "Tipo": "Classe", "Nome": "Sphagnopsida" },
+    { "ID_Tax": 68, "Tipo": "Classe", "Nome": "Andreaeopsida" },
+
+    { "ID_Tax": 69, "Tipo": "Classe", "Nome": "Marchantiopsida" },
+    { "ID_Tax": 70, "Tipo": "Classe", "Nome": "Jungermanniopsida" },
+
+    { "ID_Tax": 71, "Tipo": "Classe", "Nome": "Anthocerotopsida" },
+
+    { "ID_Tax": 72, "Tipo": "Classe", "Nome": "Saccharomycetes" },
+    { "ID_Tax": 73, "Tipo": "Classe", "Nome": "Eurotiomycetes" },
+    { "ID_Tax": 74, "Tipo": "Classe", "Nome": "Dothideomycetes" },
+
+    { "ID_Tax": 75, "Tipo": "Classe", "Nome": "Agaricomycetes" },
+    { "ID_Tax": 76, "Tipo": "Classe", "Nome": "Ustilaginomycetes" },
+    { "ID_Tax": 77, "Tipo": "Classe", "Nome": "Pucciniomycetes" },
+
+    { "ID_Tax": 78, "Tipo": "Classe", "Nome": "Euglenoidea" },
+    { "ID_Tax": 79, "Tipo": "Classe", "Nome": "Kinetoplastea" },
+
+    { "ID_Tax": 80, "Tipo": "Classe", "Nome": "Alphaproteobacteria" },
+    { "ID_Tax": 81, "Tipo": "Classe", "Nome": "Betaproteobacteria" },
+    { "ID_Tax": 82, "Tipo": "Classe", "Nome": "Gammaproteobacteria" },
+    { "ID_Tax": 83, "Tipo": "Classe", "Nome": "Deltaproteobacteria" },
+
+    { "ID_Tax": 84, "Tipo": "Ordem", "Nome": "Primates" },
+    { "ID_Tax": 85, "Tipo": "Ordem", "Nome": "Carnivora" },
+    { "ID_Tax": 86, "Tipo": "Ordem", "Nome": "Rodentia" },
+    { "ID_Tax": 87, "Tipo": "Ordem", "Nome": "Cetacea" },
+    { "ID_Tax": 88, "Tipo": "Ordem", "Nome": "Chiroptera" },
+
+    { "ID_Tax": 89, "Tipo": "Ordem", "Nome": "Passeriformes" },
+    { "ID_Tax": 90, "Tipo": "Ordem", "Nome": "Accipitriformes" },
+    { "ID_Tax": 91, "Tipo": "Ordem", "Nome": "Psittaciformes" },
+    { "ID_Tax": 92, "Tipo": "Ordem", "Nome": "Strigiformes" },
+    { "ID_Tax": 93, "Tipo": "Ordem", "Nome": "Anseriformes" },
+
+    { "ID_Tax": 94, "Tipo": "Ordem", "Nome": "Coleoptera" },
+    { "ID_Tax": 95, "Tipo": "Ordem", "Nome": "Lepidoptera" },
+    { "ID_Tax": 96, "Tipo": "Ordem", "Nome": "Diptera" },
+    { "ID_Tax": 97, "Tipo": "Ordem", "Nome": "Hymenoptera" },
+
+    { "ID_Tax": 98, "Tipo": "Ordem", "Nome": "Hypnales" },
+    { "ID_Tax": 99, "Tipo": "Ordem", "Nome": "Dicranales" },
+
+    { "ID_Tax": 100, "Tipo": "Ordem", "Nome": "Marchantiales" },
+    { "ID_Tax": 101, "Tipo": "Ordem", "Nome": "Jungermanniales" },
+
+    { "ID_Tax": 102, "Tipo": "Ordem", "Nome": "Saccharomycetales" },
+
+    { "ID_Tax": 103, "Tipo": "Ordem", "Nome": "Agaricales" },
+    { "ID_Tax": 104, "Tipo": "Ordem", "Nome": "Boletales" },
+
+    { "ID_Tax": 105, "Tipo": "Ordem", "Nome": "Euglenales" },
+
+    { "ID_Tax": 106, "Tipo": "Ordem", "Nome": "Enterobacterales" },
+    { "ID_Tax": 107, "Tipo": "Ordem", "Nome": "Pseudomonadales" },
+
+    { "ID_Tax": 108, "Tipo": "Familia", "Nome": "Hominidae" },
+    { "ID_Tax": 109, "Tipo": "Familia", "Nome": "Cebidae" },
+    { "ID_Tax": 110, "Tipo": "Familia", "Nome": "Atelidae" },
+
+    { "ID_Tax": 111, "Tipo": "Familia", "Nome": "Felidae" },
+    { "ID_Tax": 112, "Tipo": "Familia", "Nome": "Canidae" },
+    { "ID_Tax": 113, "Tipo": "Familia", "Nome": "Ursidae" },
+
+    { "ID_Tax": 114, "Tipo": "Familia", "Nome": "Turdidae" },
+    { "ID_Tax": 115, "Tipo": "Familia", "Nome": "Fringillidae" },
+    { "ID_Tax": 116, "Tipo": "Familia", "Nome": "Tyrannidae" },
+
+    { "ID_Tax": 117, "Tipo": "Familia", "Nome": "Carabidae" },
+    { "ID_Tax": 118, "Tipo": "Familia", "Nome": "Coccinellidae" },
+    { "ID_Tax": 119, "Tipo": "Familia", "Nome": "Scarabaeidae" },
+
+    { "ID_Tax": 120, "Tipo": "Familia", "Nome": "Hypnaceae" },
+    { "ID_Tax": 121, "Tipo": "Familia", "Nome": "Brachytheciaceae" },
+
+    { "ID_Tax": 122, "Tipo": "Familia", "Nome": "Marchantiaceae" },
+    { "ID_Tax": 123, "Tipo": "Familia", "Nome": "Ricciaceae" },
+
+    { "ID_Tax": 124, "Tipo": "Familia", "Nome": "Saccharomycetaceae" },
+
+    { "ID_Tax": 125, "Tipo": "Familia", "Nome": "Agaricaceae" },
+    { "ID_Tax": 126, "Tipo": "Familia", "Nome": "Amanitaceae" },
+
+    { "ID_Tax": 127, "Tipo": "Familia", "Nome": "Euglenaceae" },
+
+    { "ID_Tax": 128, "Tipo": "Familia", "Nome": "Enterobacteriaceae" },
+    { "ID_Tax": 129, "Tipo": "Familia", "Nome": "Yersiniaceae" },
+
+    { "ID_Tax": 130, "Tipo": "Genero", "Nome": "Homo" },
+    { "ID_Tax": 131, "Tipo": "Genero", "Nome": "Pan" },
+    { "ID_Tax": 132, "Tipo": "Genero", "Nome": "Gorilla" },
+
+    { "ID_Tax": 133, "Tipo": "Genero", "Nome": "Panthera" },
+    { "ID_Tax": 134, "Tipo": "Genero", "Nome": "Felis" },
+    { "ID_Tax": 135, "Tipo": "Genero", "Nome": "Lynx" },
+
+    { "ID_Tax": 136, "Tipo": "Genero", "Nome": "Turdus" },
+    { "ID_Tax": 137, "Tipo": "Genero", "Nome": "Myadestes" },
+
+    { "ID_Tax": 138, "Tipo": "Genero", "Nome": "Carabus" },
+    { "ID_Tax": 139, "Tipo": "Genero", "Nome": "Calosoma" },
+
+    { "ID_Tax": 140, "Tipo": "Genero", "Nome": "Hypnum" },
+    { "ID_Tax": 141, "Tipo": "Genero", "Nome": "Taxiphyllum" },
+
+    { "ID_Tax": 142, "Tipo": "Genero", "Nome": "Marchantia" },
+    { "ID_Tax": 143, "Tipo": "Genero", "Nome": "Preissia" },
+
+    { "ID_Tax": 144, "Tipo": "Genero", "Nome": "Saccharomyces" },
+
+    { "ID_Tax": 145, "Tipo": "Genero", "Nome": "Agaricus" },
+    { "ID_Tax": 146, "Tipo": "Genero", "Nome": "Lepiota" },
+
+    { "ID_Tax": 147, "Tipo": "Genero", "Nome": "Euglena" },
+
+    { "ID_Tax": 148, "Tipo": "Genero", "Nome": "Escherichia" },
+    { "ID_Tax": 149, "Tipo": "Genero", "Nome": "Salmonella" },
+    { "ID_Tax": 150, "Tipo": "Genero", "Nome": "Klebsiella" }
+  ]
+}

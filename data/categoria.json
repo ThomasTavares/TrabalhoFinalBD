@@ -1,0 +1,24 @@
+{
+    "registros": [
+    {
+      "ID_Categ": 1,
+      "Descritivo": "Primatas Ameaçados"
+    },
+    {
+      "ID_Categ": 2,
+      "Descritivo": "Microbiologia Ambiental"
+    },
+    {
+      "ID_Categ": 3,
+      "Descritivo": "Conservação de Aves"
+    },
+    {
+      "ID_Categ": 4,
+      "Descritivo": "Flora de Zonas Úmidas"
+    },
+    {
+      "ID_Categ": 5,
+      "Descritivo": "Adaptação Climática"
+    }
+  ]
+}
