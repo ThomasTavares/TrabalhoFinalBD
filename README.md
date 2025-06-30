@@ -8,7 +8,7 @@ Este projeto, elaborado para a disciplina de Banco de Dados na UFSC, tem como ob
 ## Introdução
 A fim de gerenciar um laboratório de taxonomia, foi desenvolvido um projeto de banco de dados com tabelas referentes aos pesquisadores, às amostras biológicas, aos espécimes vivos, aos equipamentos do laboratório, aos projetos de pesquisa e à classificação taxonômica das espécies.
 
-Além disso, também foram criadas tabelas referentes à artigos científicos produzidos pelos pesquisadores no laboratório, bem como as relações com as espécies catalogadas. Por fim, desenvolveu-se uma aplicação que integra um modelo de IA, com os objetivos de popular o banco de dados com as espécies e facilitar a pesquisa do usuário.
+Além disso, também foram criadas tabelas referentes à artigos científicos produzidos pelos pesquisadores no laboratório, bem como as relações com as espécies catalogadas. Por fim, desenvolveu-se uma aplicação que integra um modelo de IA, com os objetivos de popular o banco de dados e facilitar a pesquisa do usuário.
 
 ## Descrição Detalhada
 A fim de especificar o modelo do banco de dados, foram elaborados os seguintes requisitos para o projeto:
@@ -185,10 +185,10 @@ CREATE TABLE Registro_de_Uso (
 ```
 
 ## Aplicação
-Foi desenvolvida uma aplicação na linguagem Python (arquivo "appDB.py"). Para iniciar o código, é necessário a instalação de algumas bibliotecas adicionais pelo comando:
+Foi desenvolvida uma aplicação na linguagem Python (arquivos "appDB.py", "db_operations.py" e "ia_integration.py"). Para iniciar o código, é necessário a instalação de algumas bibliotecas adicionais pelo comando:
 
 ```
-pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable matplotlib
+pip install mysql-connector-python openai pillow transformers torch scikit-learn requests prettytable matplotlib duckduckgo_search
 ```
 
 ## Conclusão
