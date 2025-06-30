@@ -569,31 +569,14 @@ def make_query(conexao, sql_query):
             
             if resultados:
                 print(f"\nResultados encontrados: {len(resultados)} registro(s)")
-                print("─" * 60)
-                
-                # Exibe cabeçalho
-                header = " | ".join([f"{col:15}" for col in colunas])
-                print(f"│ {header} │")
-                print("─" * 60)
+                tabela_formatada = PrettyTable()
+                tabela_formatada.field_names = colunas
                 
                 # Exibe dados (limita a 20 registros para não sobrecarregar)
                 for i, linha in enumerate(resultados[:20], 1):
-                    valores = []
-                    for j, valor in enumerate(linha):
-                        if isinstance(valor, bytes):
-                            valores.append(f"<BLOB:{len(valor)}b>")
-                        elif valor is None:
-                            valores.append("NULL")
-                        else:
-                            valores.append(str(valor)[:15])
-                    
-                    linha_formatada = " | ".join([f"{val:15}" for val in valores])
-                    print(f"│ {linha_formatada} │")
-                
-                if len(resultados) > 20:
-                    print(f"... e mais {len(resultados) - 20} registros (limitado a 20 para visualização)")
-                
-                print("─" * 60)
+                    tabela_formatada.add_row(linha)
+                print(tabela_formatada)
+                print("\n" + "="*50)
             else:
                 print("Nenhum resultado encontrado para a consulta.")
                 print("\nDicas:")

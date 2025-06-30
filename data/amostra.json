@@ -2,14 +2,14 @@
     "registros": [
     {
       "ID_Amos": 1,
-      "ID_Esp": 0,
+      "ID_Esp": 15,
       "ID_Local": 1,
       "Tipo": "Amostra bacteriana",
       "Dt_Coleta": "2023-05-15"
     },
     {
       "ID_Amos": 2,
-      "ID_Esp": 1,
+      "ID_Esp": 16,
       "ID_Local": 4,
       "Tipo": "Amostra bacteriana",
       "Dt_Coleta": "2023-06-20"
