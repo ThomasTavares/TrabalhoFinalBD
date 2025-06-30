@@ -950,108 +950,539 @@ def populate_midia_table(conexao, delay=1):
         cursor.close()
 
 
-def generate_sql_query(user_prompt, schema, conexao=None, modelo="gpt-4o-mini", temperatura=0.3):
-    """Versão melhorada que gera query SQL com contexto completo do banco de dados."""
+
+def generate_sql_query(user_prompt: str, schema: Dict, conexao=None, modelo: str = "gpt-4o-mini", temperatura: float = 0.3) -> Optional[str]:
+    """
+    Função única ultra-robusta para geração de SQL complexo usando IA avançada.
+    Analisa semanticamente, constrói contexto dinâmico e gera queries sofisticadas.
+    """
     if not schema:
-        print("Schema não fornecido para geração de SQL")
-        return None
+        print("❌ Schema não fornecido")
+        return "SHOW TABLES;"
     
-    # Inicializa gerenciadores
-    api_key = get_openai_key()
-    if not api_key:
-        print("❌ Chave OpenAI não encontrada")
-        return None
+    # === ANÁLISE SEMÂNTICA AVANÇADA ===
+    prompt_lower = user_prompt.lower()
     
-    context_manager = DatabaseContextManager(conexao, schema) if conexao else None
-    ai_generator = AIDataGenerator(api_key, context_manager) if context_manager else None
-    
-    if not ai_generator:
-        print("❌ Não foi possível inicializar gerador de IA")
-        return None
-    
-    # Prompt otimizado para SQL
-    prompt = f"""
-Sistema de banco de dados de taxonomia científica.
-SOLICITAÇÃO: "{user_prompt}"
-
-SCHEMA DISPONÍVEL:
-{_format_schema_for_sql(schema)}
-
-RELACIONAMENTOS:
-{_format_relationships_for_sql()}
-
-REGRAS ESPECÍFICAS:
-1. Use APENAS tabelas/colunas listadas no schema acima
-2. Para buscas por nome: use LIKE '%termo%' (case-insensitive)
-3. Valores válidos para Status: ['Planejado', 'Ativo', 'Suspenso', 'Cancelado', 'Encerrado']
-4. Valores válidos para IUCN: ['LC', 'NT', 'VU', 'EN', 'CR', 'EW', 'EX']
-5. Valores válidos para Tipo em Taxon: ['Dominio', 'Reino', 'Filo', 'Classe', 'Ordem', 'Familia', 'Genero']
-6. Para listas grandes: use LIMIT 20
-7. Para campos BLOB: use IS NULL ou IS NOT NULL
-
-RESPONDA APENAS COM A QUERY SQL (sem explicações, sem formatação markdown):
-"""
-    
-    resposta = ai_generator.generate_data(prompt, modelo=modelo, temperatura=temperatura)
-    
-    if resposta:
-        # Limpeza da resposta
-        resposta_limpa = re.sub(r'```sql\s*', '', resposta.strip(), flags=re.IGNORECASE)
-        resposta_limpa = re.sub(r'```\s*', '', resposta_limpa)
-        resposta_limpa = re.sub(r'\n+', ' ', resposta_limpa)
-        resposta_limpa = re.sub(r'\s+', ' ', resposta_limpa).strip()
-        
-        # Remove possíveis prefixos explicativos
-        resposta_limpa = re.sub(r'^(Query:|SQL:|Resposta:|Consulta:)\s*', '', resposta_limpa, flags=re.IGNORECASE)
-        
-        # Verifica se contém palavras SQL essenciais
-        palavras_sql = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'SHOW', 'DESCRIBE']
-        if any(palavra in resposta_limpa.upper() for palavra in palavras_sql):
-            return resposta_limpa
-    
-    print("Falha ao gerar query SQL válida")
-    return None
-
-
-def _format_schema_for_sql(schema):
-    """Formata schema para uso em prompts SQL."""
-    schema_info = []
-    for tabela, colunas in schema.items():
-        colunas_str = []
-        for col in colunas:
-            col_info = f"{col['nome']} ({col['tipo']}"
-            if col.get('chave') == 'PRI':
-                col_info += ", PK"
-            elif col.get('chave') == 'MUL':
-                col_info += ", FK"
-            col_info += ")"
-            colunas_str.append(col_info)
-        schema_info.append(f"{tabela}: {', '.join(colunas_str)}")
-    return "\n".join(schema_info)
-
-
-def _format_relationships_for_sql():
-    """Formata relacionamentos para uso em prompts SQL."""
-    relacionamentos = {
-        'hierarquia': {'ID_Tax': 'taxon.ID_Tax', 'ID_TaxTopo': 'taxon.ID_Tax'},
-        'especie': {'ID_Gen': 'taxon.ID_Tax'},
-        'especime': {'ID_Esp': 'especie.ID_Esp'},
-        'amostra': {'ID_Esp': 'especie.ID_Esp', 'ID_Local': 'local_de_coleta.ID_Local'},
-        'midia': {'ID_Especime': 'especime.ID_Especime'},
-        'artigo': {'ID_Proj': 'projeto.ID_Proj'},
-        'contrato': {'ID_Func': 'funcionario.ID_Func', 'ID_Lab': 'laboratorio.ID_Lab'},
-        'financiamento': {'ID_Proj': 'projeto.ID_Proj', 'ID_Financiador': 'financiador.ID_Financiador'},
-        'equipamento': {'ID_Lab': 'laboratorio.ID_Lab'},
-        'registro_de_uso': {'ID_Func': 'funcionario.ID_Func', 'ID_Equip': 'equipamento.ID_Equip'},
-        'proj_func': {'ID_Proj': 'projeto.ID_Proj', 'ID_Func': 'funcionario.ID_Func'},
-        'proj_esp': {'ID_Proj': 'projeto.ID_Proj', 'ID_Esp': 'especie.ID_Esp'},
-        'proj_cat': {'ID_Proj': 'projeto.ID_Proj', 'ID_Categ': 'categoria.ID_Categ'}
+    # Detecta intenção e complexidade
+    intent = {
+        'tipo': 'SELECT',
+        'recursos': [],
+        'tabelas': [],
+        'complexidade': 'simples'
     }
     
-    rel_info = []
-    for tabela, rels in relacionamentos.items():
-        for fk, ref in rels.items():
-            rel_info.append(f"- {tabela}.{fk} → {ref}")
+    # Análise de operação
+    if any(word in prompt_lower for word in ['inserir', 'adicionar', 'criar', 'insert']):
+        intent['tipo'] = 'INSERT'
+    elif any(word in prompt_lower for word in ['atualizar', 'modificar', 'alterar', 'update']):
+        intent['tipo'] = 'UPDATE'
+    elif any(word in prompt_lower for word in ['deletar', 'remover', 'excluir', 'delete']):
+        intent['tipo'] = 'DELETE'
     
-    return "\n".join(rel_info)
+    # Detecta recursos avançados
+    resources = {
+        'hierarquia': ['hierarquia', 'taxonomia', 'árvore', 'pai', 'filho', 'ancestral', 'descendente', 'classificação'],
+        'agregacao': ['total', 'soma', 'média', 'count', 'máximo', 'mínimo', 'grupo', 'agregação', 'estatística'],
+        'ranking': ['ranking', 'top', 'maior', 'menor', 'primeiro', 'último', 'melhor', 'pior', 'ordem'],
+        'temporal': ['data', 'período', 'ano', 'mês', 'tempo', 'cronológico', 'histórico', 'quando'],
+        'analise': ['análise', 'distribuição', 'percentual', 'proporção', 'comparação', 'tendência'],
+        'relacional': ['relacionamento', 'associação', 'ligação', 'conexão', 'junto', 'vinculado']
+    }
+    
+    for feature, keywords in resources.items():
+        if any(keyword in prompt_lower for keyword in keywords):
+            intent['recursos'].append(feature)
+    
+    # Detecta tabelas relevantes
+    table_hints = {
+        'taxon': ['taxonomia', 'hierarquia', 'reino', 'filo', 'classe', 'ordem', 'família', 'gênero', 'classificação'],
+        'especie': ['espécie', 'species', 'iucn', 'conservação', 'extinção', 'animal', 'planta'],
+        'projeto': ['projeto', 'pesquisa', 'estudo', 'investigação', 'trabalho'],
+        'funcionario': ['funcionário', 'pesquisador', 'pessoa', 'cientista', 'equipe', 'staff'],
+        'amostra': ['amostra', 'coleta', 'material', 'specimen', 'exemplar'],
+        'equipamento': ['equipamento', 'instrumento', 'máquina', 'ferramenta', 'aparelho'],
+        'laboratorio': ['laboratório', 'lab', 'instalação', 'centro'],
+        'midia': ['imagem', 'foto', 'vídeo', 'mídia', 'arquivo']
+    }
+    
+    for table, keywords in table_hints.items():
+        if any(keyword in prompt_lower for keyword in keywords):
+            intent['tabelas'].append(table)
+    
+    # Calcula complexidade
+    complexity_score = len(intent['recursos'])
+    if complexity_score >= 3:
+        intent['complexidade'] = 'muito_complexa'
+    elif complexity_score >= 2:
+        intent['complexidade'] = 'complexa'
+    elif complexity_score >= 1:
+        intent['complexidade'] = 'moderada'
+    
+    # === CONTEXTO DINÂMICO INTELIGENTE ===
+    context = {'stats': {}, 'samples': {}, 'relationships': {}}
+    
+    if conexao:
+        try:
+            cursor = conexao.cursor()
+            
+            # Estatísticas das tabelas
+            for table_name in schema.keys():
+                try:
+                    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                    context['stats'][table_name] = cursor.fetchone()[0]
+                except:
+                    context['stats'][table_name] = 0
+            
+            # Amostras de dados baseadas na intenção
+            if intent['tabelas']:
+                for table in intent['tabelas']:
+                    if table in schema:
+                        try:
+                            cursor.execute(f"SELECT * FROM {table} LIMIT 3")
+                            cols = [desc[0] for desc in cursor.description]
+                            rows = cursor.fetchall()
+                            context['samples'][table] = {'cols': cols, 'data': rows}
+                        except:
+                            pass
+            
+            # Dados específicos para recursos detectados
+            if 'hierarquia' in intent['recursos']:
+                try:
+                    cursor.execute("SELECT Tipo, COUNT(*) FROM Taxon GROUP BY Tipo")
+                    context['taxonomia'] = cursor.fetchall()
+                except:
+                    pass
+            
+            if 'analise' in intent['recursos'] and 'especie' in intent['tabelas']:
+                try:
+                    cursor.execute("SELECT IUCN, COUNT(*) FROM Especie GROUP BY IUCN")
+                    context['iucn_dist'] = cursor.fetchall()
+                except:
+                    pass
+            
+            cursor.close()
+        except:
+            pass
+    
+    # === PROMPT ULTRA-AVANÇADO PARA IA ===
+    api_key = get_openai_key()
+    if not api_key:
+        return _generate_smart_fallback(user_prompt, intent, schema, context)
+    
+    # Constrói prompt sofisticado
+    prompt_sections = [
+        f"PERGUNTA DO USUÁRIO: \"{user_prompt}\"",
+        "",
+        "=== ANÁLISE SEMÂNTICA ===",
+        f"Tipo de operação: {intent['tipo']}",
+        f"Complexidade detectada: {intent['complexidade']}",
+        f"Recursos necessários: {', '.join(intent['recursos']) if intent['recursos'] else 'consulta básica'}",
+        f"Tabelas envolvidas: {', '.join(intent['tabelas']) if intent['tabelas'] else 'a determinar automaticamente'}",
+        "",
+        "=== SCHEMA COMPLETO ===",
+    ]
+    
+    # Schema detalhado
+    for table, columns in schema.items():
+        col_info = []
+        pks = []
+        fks = []
+        
+        for col in columns:
+            col_desc = f"{col['nome']} {col['tipo']}"
+            if col.get('nulo') == 'NO':
+                col_desc += " NOT NULL"
+            if col.get('default'):
+                col_desc += f" DEFAULT {col['default']}"
+            
+            if col.get('chave') == 'PRI':
+                pks.append(col['nome'])
+            elif col.get('chave') == 'MUL':
+                fks.append(col['nome'])
+            
+            col_info.append(col_desc)
+        
+        prompt_sections.append(f"TABLE {table}:")
+        prompt_sections.append(f"  Colunas: {', '.join(col_info)}")
+        if pks:
+            prompt_sections.append(f"  PRIMARY KEY: {', '.join(pks)}")
+        if fks:
+            prompt_sections.append(f"  FOREIGN KEYS: {', '.join(fks)}")
+        prompt_sections.append("")
+    
+    # Contexto dinâmico
+    if context['stats']:
+        prompt_sections.append("=== ESTATÍSTICAS ATUAIS ===")
+        for table, count in context['stats'].items():
+            prompt_sections.append(f"{table}: {count:,} registros")
+        prompt_sections.append("")
+    
+    if context['samples']:
+        prompt_sections.append("=== DADOS DE EXEMPLO ===")
+        for table, data in context['samples'].items():
+            prompt_sections.append(f"{table.upper()}:")
+            prompt_sections.append(f"  Colunas: {', '.join(data['cols'])}")
+            for i, row in enumerate(data['data'][:2]):
+                clean_row = []
+                for val in row:
+                    if isinstance(val, bytes):
+                        clean_row.append(f"<BLOB:{len(val)}b>")
+                    else:
+                        clean_row.append(str(val)[:20])
+                prompt_sections.append(f"  Exemplo {i+1}: {' | '.join(clean_row)}")
+            prompt_sections.append("")
+    
+    if 'taxonomia' in context:
+        prompt_sections.append("=== DISTRIBUIÇÃO TAXONÔMICA ===")
+        for tipo, count in context['taxonomia']:
+            prompt_sections.append(f"{tipo}: {count}")
+        prompt_sections.append("")
+    
+    if 'iucn_dist' in context:
+        prompt_sections.append("=== STATUS DE CONSERVAÇÃO ===")
+        for status, count in context['iucn_dist']:
+            prompt_sections.append(f"{status}: {count}")
+        prompt_sections.append("")
+    
+    # Padrões SQL complexos baseados na intenção
+    prompt_sections.extend([
+        "=== PADRÕES SQL AVANÇADOS ===",
+        "",
+        "1. HIERARQUIA TAXONÔMICA (CTE Recursiva):",
+        "WITH RECURSIVE hierarchy AS (",
+        "  SELECT ID_Tax, Nome, Tipo, 0 as nivel, CAST(Nome AS CHAR(500)) as path",
+        "  FROM Taxon WHERE Tipo = 'Dominio'",
+        "  UNION ALL",
+        "  SELECT t.ID_Tax, t.Nome, t.Tipo, h.nivel + 1, CONCAT(h.path, ' > ', t.Nome)",
+        "  FROM Taxon t",
+        "  JOIN Hierarquia hr ON t.ID_Tax = hr.ID_Tax",
+        "  JOIN hierarchy h ON hr.ID_TaxTopo = h.ID_Tax",
+        "  WHERE h.nivel < 8",
+        ")",
+        "SELECT * FROM hierarchy ORDER BY nivel, Nome;",
+        "",
+        "2. ANÁLISE ESTATÍSTICA AVANÇADA:",
+        "SELECT",
+        "  t.Nome as Categoria,",
+        "  COUNT(DISTINCT e.ID_Esp) as Total_Especies,",
+        "  COUNT(CASE WHEN e.IUCN IN ('VU','EN','CR') THEN 1 END) as Ameacadas,",
+        "  ROUND(AVG(CASE WHEN e.IUCN IN ('VU','EN','CR') THEN 1 ELSE 0 END) * 100, 2) as Perc_Ameacadas,",
+        "  ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT e.ID_Esp) DESC) as Ranking",
+        "FROM Taxon t",
+        "LEFT JOIN Especie e ON t.ID_Tax = e.ID_Gen",
+        "WHERE t.Tipo = 'Reino'",
+        "GROUP BY t.ID_Tax, t.Nome",
+        "HAVING COUNT(DISTINCT e.ID_Esp) > 0;",
+        "",
+        "3. ANÁLISE RELACIONAL COMPLEXA:",
+        "SELECT",
+        "  p.Nome as Projeto,",
+        "  COUNT(DISTINCT pe.ID_Esp) as Especies_Estudadas,",
+        "  COUNT(DISTINCT pf.ID_Func) as Pesquisadores,",
+        "  GROUP_CONCAT(DISTINCT e.Nome ORDER BY e.Nome SEPARATOR ', ') as Lista_Especies",
+        "FROM Projeto p",
+        "LEFT JOIN Proj_Esp pe ON p.ID_Proj = pe.ID_Proj",
+        "LEFT JOIN Proj_Func pf ON p.ID_Proj = pf.ID_Proj",
+        "LEFT JOIN Especie e ON pe.ID_Esp = e.ID_Esp",
+        "GROUP BY p.ID_Proj, p.Nome",
+        "ORDER BY Especies_Estudadas DESC;",
+        "",
+        "4. ANÁLISE TEMPORAL:",
+        "SELECT",
+        "  YEAR(p.Dt_Inicio) as Ano,",
+        "  COUNT(*) as Projetos_Iniciados,",
+        "  AVG(p.Valor) as Orcamento_Medio,",
+        "  SUM(CASE WHEN p.Status = 'Encerrado' THEN 1 ELSE 0 END) as Projetos_Concluidos",
+        "FROM Projeto p",
+        "GROUP BY YEAR(p.Dt_Inicio)",
+        "ORDER BY Ano DESC;",
+        "",
+        "=== VALORES VÁLIDOS ===",
+        "IUCN: LC, NT, VU, EN, CR, EW, EX",
+        "Status_Projeto: Planejado, Ativo, Suspenso, Cancelado, Encerrado",
+        "Tipos_Taxon: Dominio, Reino, Filo, Classe, Ordem, Familia, Genero",
+        "",
+        "=== INSTRUÇÕES FINAIS ===",
+        f"- Complexidade necessária: {intent['complexidade']}",
+        f"- Recursos a usar: {', '.join(intent['recursos']) if intent['recursos'] else 'consulta direta'}",
+        "- Otimize para performance (use LIMIT quando apropriado)",
+        "- Use JOINs adequados baseados nas FKs mostradas",
+        "- Para hierarquias: sempre use CTEs recursivas",
+        "- Para rankings: use window functions (ROW_NUMBER, RANK)",
+        "- Para agregações: use GROUP BY com funções apropriadas",
+        "- Inclua apenas SQL válido e otimizado",
+        "",
+        "RESPONDA APENAS COM A QUERY SQL FINAL (sem explicações, sem markdown):"
+    ])
+    
+    full_prompt = "\n".join(prompt_sections)
+    
+    # === CHAMADA À IA ===
+    try:
+        openai.api_key = api_key
+        response = openai.chat.completions.create(
+            model=modelo,
+            messages=[{
+                "role": "system", 
+                "content": "Você é um especialista em SQL para sistemas científicos de taxonomia e biodiversidade. Gere apenas SQL otimizado e válido."
+            }, {
+                "role": "user", 
+                "content": full_prompt
+            }],
+            temperature=temperatura,
+            max_tokens=2500
+        )
+        
+        raw_sql = response.choices[0].message.content
+        if raw_sql:
+            clean_sql = _clean_sql_response(raw_sql)
+            if clean_sql and _validate_sql(clean_sql):
+                return clean_sql
+    
+    except Exception as e:
+        print(f"⚠️ Erro na IA: {e}")
+    
+    # === FALLBACK INTELIGENTE ===
+    return _generate_smart_fallback(user_prompt, intent, schema, context)
+
+
+def _clean_sql_response(raw_sql: str) -> Optional[str]:
+    """Limpa e extrai SQL válido da resposta da IA."""
+    if not raw_sql:
+        return None
+    
+    # Remove markdown
+    sql = re.sub(r'```sql\s*', '', raw_sql, flags=re.IGNORECASE)
+    sql = re.sub(r'```\s*', '', sql)
+    
+    # Extrai SQL principal
+    lines = sql.split('\n')
+    sql_lines = []
+    capturing = False
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Inicia captura em comando SQL
+        if any(line.upper().startswith(cmd) for cmd in ['SELECT', 'WITH', 'INSERT', 'UPDATE', 'DELETE', 'SHOW', 'DESCRIBE']):
+            capturing = True
+        
+        if capturing and line:
+            # Para se não for SQL
+            if not any(indicator in line.upper() for indicator in [
+                'SELECT', 'FROM', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'HAVING', 'UNION', 'WITH',
+                'INSERT', 'UPDATE', 'DELETE', 'SHOW', 'DESCRIBE', 'AND', 'OR', 'AS', 'ON', 'IN',
+                'LIKE', 'COUNT', 'SUM', 'AVG', 'MAX', 'MIN', 'DISTINCT', 'LIMIT', 'OFFSET',
+                '(', ')', ',', ';', '--', '=', '<', '>', 'IS', 'NOT', 'NULL', 'CASE', 'WHEN'
+            ]) and not re.match(r'^[A-Za-z_][A-Za-z0-9_]*\s*[=<>!]', line):
+                break
+            
+            sql_lines.append(line)
+    
+    if not sql_lines:
+        return None
+    
+    # Reconstrói SQL
+    clean_sql = ' '.join(sql_lines)
+    clean_sql = re.sub(r'\s+', ' ', clean_sql).strip()
+    
+    # Adiciona ponto e vírgula
+    if not clean_sql.endswith(';'):
+        clean_sql += ';'
+    
+    return clean_sql
+
+
+def _validate_sql(sql: str) -> bool:
+    """Validação robusta de SQL."""
+    if not sql or len(sql) < 5:
+        return False
+    
+    sql_upper = sql.upper()
+    
+    # Comandos válidos
+    valid_starts = ['SELECT', 'WITH', 'INSERT', 'UPDATE', 'DELETE', 'SHOW', 'DESCRIBE', 'EXPLAIN']
+    if not any(sql_upper.startswith(start) for start in valid_starts):
+        return False
+    
+    # Balanceamento
+    if sql.count('(') != sql.count(')'):
+        return False
+    
+    # SELECT deve ter FROM (com exceções)
+    if sql_upper.startswith('SELECT') and 'FROM' not in sql_upper:
+        if not any(func in sql_upper for func in ['NOW()', 'USER()', 'VERSION()', 'DATABASE()', 'SHOW']):
+            return False
+    
+    # Não deve ter comandos perigosos
+    dangerous = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE']
+    if any(danger in sql_upper for danger in dangerous):
+        return False
+    
+    return True
+
+
+def _generate_smart_fallback(user_prompt: str, intent: Dict, schema: Dict, context: Dict) -> str:
+    """Fallback inteligente baseado na análise semântica."""
+    prompt_lower = user_prompt.lower()
+    
+    # Fallbacks sofisticados baseados na intenção
+    if 'hierarquia' in intent['recursos'] or 'taxonomia' in prompt_lower:
+        return """
+        WITH RECURSIVE taxonomia_completa AS (
+            SELECT ID_Tax, Nome, Tipo, 0 as nivel, CAST(Nome AS CHAR(500)) as caminho_completo
+            FROM Taxon WHERE Tipo = 'Dominio'
+            UNION ALL
+            SELECT t.ID_Tax, t.Nome, t.Tipo, tc.nivel + 1, 
+                   CONCAT(tc.caminho_completo, ' → ', t.Nome) as caminho_completo
+            FROM Taxon t 
+            JOIN Hierarquia h ON t.ID_Tax = h.ID_Tax
+            JOIN taxonomia_completa tc ON h.ID_TaxTopo = tc.ID_Tax
+            WHERE tc.nivel < 10
+        )
+        SELECT nivel, Tipo, Nome, caminho_completo 
+        FROM taxonomia_completa 
+        ORDER BY nivel, Tipo, Nome 
+        LIMIT 100;
+        """
+    
+    elif 'ranking' in intent['recursos'] and ('projeto' in intent['tabelas'] or 'projeto' in prompt_lower):
+        return """
+        SELECT 
+            p.Nome as Projeto,
+            p.Status,
+            p.Valor as Orcamento,
+            COUNT(DISTINCT pe.ID_Esp) as Especies_Estudadas,
+            COUNT(DISTINCT pf.ID_Func) as Pesquisadores_Envolvidos,
+            DATEDIFF(COALESCE(p.Dt_Fim, CURDATE()), p.Dt_Inicio) as Duracao_Dias,
+            ROW_NUMBER() OVER (ORDER BY p.Valor DESC) as Ranking_Por_Orcamento,
+            ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT pe.ID_Esp) DESC) as Ranking_Por_Especies,
+            RANK() OVER (ORDER BY COUNT(DISTINCT pf.ID_Func) DESC) as Ranking_Por_Equipe
+        FROM Projeto p
+        LEFT JOIN Proj_Esp pe ON p.ID_Proj = pe.ID_Proj
+        LEFT JOIN Proj_Func pf ON p.ID_Proj = pf.ID_Proj
+        GROUP BY p.ID_Proj, p.Nome, p.Status, p.Valor, p.Dt_Inicio, p.Dt_Fim
+        ORDER BY Especies_Estudadas DESC, Orcamento DESC
+        LIMIT 20;
+        """
+    
+    elif 'analise' in intent['recursos'] and 'especie' in intent['tabelas']:
+        return """
+        SELECT 
+            t.Nome as Reino,
+            COUNT(DISTINCT e.ID_Esp) as Total_Especies,
+            COUNT(DISTINCT CASE WHEN e.IUCN IN ('VU','EN','CR','EW','EX') THEN e.ID_Esp END) as Especies_Ameacadas,
+            COUNT(DISTINCT CASE WHEN e.IUCN = 'LC' THEN e.ID_Esp END) as Especies_Seguras,
+            ROUND(AVG(CASE WHEN e.IUCN IN ('VU','EN','CR','EW','EX') THEN 1 ELSE 0 END) * 100, 2) as Percentual_Ameacadas,
+            ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT e.ID_Esp) DESC) as Ranking_Diversidade
+        FROM Taxon t
+        JOIN Hierarquia h ON t.ID_Tax = h.ID_TaxTopo
+        JOIN Taxon t2 ON h.ID_Tax = t2.ID_Tax
+        JOIN Especie e ON t2.ID_Tax = e.ID_Gen
+        WHERE t.Tipo = 'Reino'
+        GROUP BY t.ID_Tax, t.Nome
+        HAVING COUNT(DISTINCT e.ID_Esp) > 0
+        ORDER BY Total_Especies DESC
+        LIMIT 15;
+        """
+    
+    elif 'temporal' in intent['recursos']:
+        return """
+        SELECT 
+            YEAR(p.Dt_Inicio) as Ano_Inicio,
+            QUARTER(p.Dt_Inicio) as Trimestre,
+            COUNT(*) as Projetos_Iniciados,
+            COUNT(CASE WHEN p.Status = 'Encerrado' THEN 1 END) as Projetos_Concluidos,
+            AVG(p.Valor) as Orcamento_Medio,
+            SUM(p.Valor) as Orcamento_Total,
+            COUNT(DISTINCT pe.ID_Esp) as Total_Especies_Estudadas
+        FROM Projeto p
+        LEFT JOIN Proj_Esp pe ON p.ID_Proj = pe.ID_Proj
+        WHERE p.Dt_Inicio >= '2020-01-01'
+        GROUP BY YEAR(p.Dt_Inicio), QUARTER(p.Dt_Inicio)
+        ORDER BY Ano_Inicio DESC, Trimestre DESC
+        LIMIT 20;
+        """
+    
+    elif 'funcionario' in intent['tabelas'] or 'pesquisador' in prompt_lower:
+        return """
+        SELECT 
+            f.Nome as Pesquisador,
+            f.Cargo,
+            f.Email,
+            COUNT(DISTINCT pf.ID_Proj) as Projetos_Participacao,
+            COUNT(DISTINCT a.ID_Amostra) as Amostras_Coletadas,
+            COUNT(DISTINCT ru.ID_Equip) as Equipamentos_Utilizados,
+            GROUP_CONCAT(DISTINCT p.Nome ORDER BY p.Nome SEPARATOR '; ') as Lista_Projetos
+        FROM Funcionario f
+        LEFT JOIN Proj_Func pf ON f.ID_Func = pf.ID_Func
+        LEFT JOIN Projeto p ON pf.ID_Proj = p.ID_Proj
+        LEFT JOIN Amostra a ON f.ID_Func = a.ID_Func
+        LEFT JOIN Registro_de_Uso ru ON f.ID_Func = ru.ID_Func
+        GROUP BY f.ID_Func, f.Nome, f.Cargo, f.Email
+        ORDER BY Projetos_Participacao DESC, Amostras_Coletadas DESC
+        LIMIT 25;
+        """
+    
+    elif 'todas' in prompt_lower and 'espécie' in prompt_lower:
+        return """
+        SELECT 
+            CONCAT(tg.Nome, ' ', e.Nome) as Nome_Cientifico,
+            e.Nome_Pop as Nome_Popular,
+            e.IUCN as Status_Conservacao,
+            e.Habitat,
+            e.Caracteristicas,
+            tf.Nome as Familia,
+            to_tax.Nome as Ordem,
+            tc.Nome as Classe
+        FROM Especie e
+        JOIN Taxon tg ON e.ID_Gen = tg.ID_Tax
+        LEFT JOIN Hierarquia hf ON tg.ID_Tax = hf.ID_Tax
+        LEFT JOIN Taxon tf ON hf.ID_TaxTopo = tf.ID_Tax AND tf.Tipo = 'Familia'
+        LEFT JOIN Hierarquia ho ON tf.ID_Tax = ho.ID_Tax
+        LEFT JOIN Taxon to_tax ON ho.ID_TaxTopo = to_tax.ID_Tax AND to_tax.Tipo = 'Ordem'
+        LEFT JOIN Hierarquia hc ON to_tax.ID_Tax = hc.ID_Tax
+        LEFT JOIN Taxon tc ON hc.ID_TaxTopo = tc.ID_Tax AND tc.Tipo = 'Classe'
+        ORDER BY Nome_Cientifico
+        LIMIT 50;
+        """
+    
+    elif any(word in prompt_lower for word in ['contagem', 'total', 'quantos', 'estatística']):
+        return """
+        SELECT 
+            'Domínios' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Dominio'
+        UNION ALL
+        SELECT 'Reinos' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Reino'
+        UNION ALL
+        SELECT 'Filos' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Filo'
+        UNION ALL
+        SELECT 'Classes' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Classe'
+        UNION ALL
+        SELECT 'Ordens' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Ordem'
+        UNION ALL
+        SELECT 'Famílias' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Familia'
+        UNION ALL
+        SELECT 'Gêneros' as Categoria, COUNT(*) as Total FROM Taxon WHERE Tipo = 'Genero'
+        UNION ALL
+        SELECT 'Espécies' as Categoria, COUNT(*) as Total FROM Especie
+        UNION ALL
+        SELECT 'Projetos' as Categoria, COUNT(*) as Total FROM Projeto
+        UNION ALL
+        SELECT 'Funcionários' as Categoria, COUNT(*) as Total FROM Funcionario
+        ORDER BY Total DESC;
+        """
+    
+    else:
+        # Fallback genérico inteligente
+        if context['stats']:
+            # Se tem estatísticas, mostra resumo
+            return """
+            SELECT table_name as Tabela, table_rows as Registros_Estimados
+            FROM information_schema.tables 
+            WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'
+            ORDER BY table_rows DESC;
+            """
+        else:
+            return "SHOW TABLES;"
+
 
